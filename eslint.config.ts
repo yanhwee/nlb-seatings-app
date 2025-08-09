@@ -13,5 +13,5 @@ export default defineConfig([
       "semi": ["error", "always"]
     }
   },
-  tseslint.configs.recommended,
+  tseslint.configs.recommended
 ]);
