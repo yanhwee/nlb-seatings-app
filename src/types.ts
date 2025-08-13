@@ -20,11 +20,14 @@ type SeatDetails = {
   name: string
 }
 
-type LibraryAvailability = Map<AreaId, AreaAvailability>
+type LibraryAvailability = Map<AreaId, DatedAreaAvailability>
+type DatedAreaAvailability = {
+  startDatetime: Date
+  endDatetime: Date
+  areaAvailability: AreaAvailability
+}
 type AreaAvailability = Map<SeatId, SeatAvailability>
 type SeatAvailability = boolean[]
-
-type DatedLibraryAvailability = [Date, LibraryAvailability]
 
 export type {
   LibraryId,
@@ -37,7 +40,7 @@ export type {
   AreaDetails,
   SeatDetails,
   LibraryAvailability,
+  DatedAreaAvailability,
   AreaAvailability,
   SeatAvailability,
-  DatedLibraryAvailability,
 }

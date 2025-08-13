@@ -4,13 +4,12 @@ import type {
   LibraryInfo,
   AreaInfo,
   SeatInfo,
-  DatedLibraryAvailability,
   LibraryAvailability,
   AreaId,
   SeatId,
   SeatAvailability,
-  AreaAvailability,
-} from "./types.js"
+  DatedAreaAvailability,
+} from "./types.ts"
 
 /**
  * Converts a LibraryInfo Map into a serializable object.
@@ -21,39 +20,39 @@ export function serializeLibraryInfo(
   libraryInfo: LibraryInfo,
 ): string {
   // Convert the top-level LibraryInfo Map to an array of [key, value] pairs.
-  const serializableLibraries = Array.from(libraryInfo.entries()).map(
-    ([libraryId, libraryDetails]) => {
-      // For each LibraryDetails object, convert its nested AreaInfo Map.
-      const serializableAreas = Array.from(
-        libraryDetails.areaInfo.entries(),
-      ).map(([areaId, areaDetails]) => {
-        // For each AreaDetails object, convert its nested SeatInfo Map.
-        const serializableSeats = Array.from(
-          areaDetails.seatInfo.entries(),
-        )
+  const serializableLibraries = Array.from(
+    libraryInfo.entries(),
+  ).map(([libraryId, libraryDetails]) => {
+    // For each LibraryDetails object, convert its nested AreaInfo Map.
+    const serializableAreas = Array.from(
+      libraryDetails.areaInfo.entries(),
+    ).map(([areaId, areaDetails]) => {
+      // For each AreaDetails object, convert its nested SeatInfo Map.
+      const serializableSeats = Array.from(
+        areaDetails.seatInfo.entries(),
+      )
 
-        // Return the serializable AreaDetails object, converting Dates to ISO strings.
-        return [
-          areaId,
-          {
-            name: areaDetails.name,
-            openingTime: areaDetails.openingTime.toISOString(), // Convert Date to a string
-            closingTime: areaDetails.closingTime.toISOString(), // Convert Date to a string
-            seatInfo: serializableSeats, // The seats are now an array
-          },
-        ]
-      })
-
-      // Return the serializable LibraryDetails object with the array of areas.
+      // Return the serializable AreaDetails object, converting Dates to ISO strings.
       return [
-        libraryId,
+        areaId,
         {
-          name: libraryDetails.name,
-          areaInfo: serializableAreas,
+          name: areaDetails.name,
+          openingTime: areaDetails.openingTime.toISOString(), // Convert Date to a string
+          closingTime: areaDetails.closingTime.toISOString(), // Convert Date to a string
+          seatInfo: serializableSeats, // The seats are now an array
         },
       ]
-    },
-  )
+    })
+
+    // Return the serializable LibraryDetails object with the array of areas.
+    return [
+      libraryId,
+      {
+        name: libraryDetails.name,
+        areaInfo: serializableAreas,
+      },
+    ]
+  })
 
   // Finally, use JSON.stringify to convert the entire structure into a string.
   return JSON.stringify(serializableLibraries, null, 2)
@@ -75,21 +74,25 @@ export function deserializeLibraryInfo(
     parsedData.map(([libraryId, libraryDetails]: any) => {
       // Rebuild the nested AreaInfo Map.
       const areaInfo: AreaInfo = new Map(
-        libraryDetails.areaInfo.map(([areaId, areaDetails]: any) => {
-          // Rebuild the nested SeatInfo Map.
-          const seatInfo: SeatInfo = new Map(areaDetails.seatInfo)
+        libraryDetails.areaInfo.map(
+          ([areaId, areaDetails]: any) => {
+            // Rebuild the nested SeatInfo Map.
+            const seatInfo: SeatInfo = new Map(
+              areaDetails.seatInfo,
+            )
 
-          // Return the AreaDetails object, converting ISO strings back to Dates.
-          return [
-            areaId,
-            {
-              name: areaDetails.name,
-              openingTime: new Date(areaDetails.openingTime), // Convert string to Date
-              closingTime: new Date(areaDetails.closingTime), // Convert string to Date
-              seatInfo: seatInfo,
-            },
-          ]
-        }),
+            // Return the AreaDetails object, converting ISO strings back to Dates.
+            return [
+              areaId,
+              {
+                name: areaDetails.name,
+                openingTime: new Date(areaDetails.openingTime), // Convert string to Date
+                closingTime: new Date(areaDetails.closingTime), // Convert string to Date
+                seatInfo: seatInfo,
+              },
+            ]
+          },
+        ),
       )
 
       // Return the LibraryDetails object with the AreaInfo Map.
@@ -107,75 +110,74 @@ export function deserializeLibraryInfo(
 }
 
 /**
- * Converts a DatedLibraryAvailability tuple into a JSON string.
- * @param data The DatedLibraryAvailability tuple to serialize.
- * @returns A JSON string representing the data structure.
+ * Serializes a LibraryAvailability Map into a JSON string.
+ * @param libraryAvailability The Map to serialize.
+ * @returns A JSON string representing the nested data structure.
  */
-export function serializeDatedLibraryAvailability(
-  data: DatedLibraryAvailability,
+export function serializeLibraryAvailability(
+  libraryAvailability: LibraryAvailability,
 ): string {
-  // Extract the Date and the LibraryAvailability Map
-  const [date, libraryAvailability] = data
-
-  // Convert the top-level LibraryAvailability Map to a serializable object.
-  const serializableLibraryAvailability = Array.from(
+  // Convert the outer Map into an array of [AreaId, DatedAreaAvailability]
+  const serializableData = Array.from(
     libraryAvailability.entries(),
-  ).map(([areaId, areaAvailability]) => {
-    // Convert the nested AreaAvailability Map to an array of entries.
-    const serializableAreaAvailability = Array.from(
-      areaAvailability.entries(),
+  ).map(([areaId, datedAreaAvailability]) => {
+    // Convert the nested Map and Date objects for serialization
+    const serializedAreaAvailability = Array.from(
+      datedAreaAvailability.areaAvailability.entries(),
     )
 
-    // Return a serializable tuple for each area.
-    return [areaId, serializableAreaAvailability]
-  })
+    const serializedDatedAreaAvailability = {
+      startDatetime:
+        datedAreaAvailability.startDatetime.toISOString(),
+      endDatetime:
+        datedAreaAvailability.endDatetime.toISOString(),
+      areaAvailability: serializedAreaAvailability,
+    }
 
-  // Create the final serializable object.
-  // The date is converted to an ISO string for serialization.
-  const serializableData = [
-    date.toISOString(),
-    serializableLibraryAvailability,
-  ]
+    return [areaId, serializedDatedAreaAvailability]
+  })
 
   return JSON.stringify(serializableData, null, 2)
 }
 
 /**
- * Converts a JSON string back into a typed DatedLibraryAvailability tuple.
+ * Deserializes a JSON string back into a typed LibraryAvailability Map.
  * @param jsonString The JSON string to deserialize.
- * @returns A fully typed DatedLibraryAvailability tuple.
+ * @returns A fully typed LibraryAvailability Map.
  */
-export function deserializeDatedLibraryAvailability(
+export function deserializeLibraryAvailability(
   jsonString: string,
-): DatedLibraryAvailability {
-  // Parse the JSON string back into a nested array structure.
+): LibraryAvailability {
+  // Parse the JSON string back into the intermediate array structure
   const parsedData = JSON.parse(jsonString)
 
-  // Extract the serialized date and library availability data.
-  const [dateString, serializedLibraryAvailability] = parsedData
-
-  // Rebuild the top-level LibraryAvailability Map.
+  // Rebuild the top-level LibraryAvailability Map
   const libraryAvailability: LibraryAvailability = new Map(
-    serializedLibraryAvailability.map(
-      ([areaId, areaAvailability]: [
-        AreaId,
-        [SeatId, SeatAvailability][],
-      ]) => {
-        // Rebuild the nested AreaAvailability Map.
-        const newAreaAvailability: AreaAvailability = new Map(
-          areaAvailability,
-        )
+    parsedData.map(
+      ([areaId, serializedDatedAvailability]: any) => {
+        // Rebuild the nested AreaAvailability Map from the array
+        const areaAvailability = new Map<
+          SeatId,
+          SeatAvailability
+        >(serializedDatedAvailability.areaAvailability)
 
-        return [areaId, newAreaAvailability]
+        // Reconstruct the DatedAreaAvailability object, converting ISO strings back to Dates
+        const datedAvailability: DatedAreaAvailability = {
+          startDatetime: new Date(
+            serializedDatedAvailability.startDatetime,
+          ),
+          endDatetime: new Date(
+            serializedDatedAvailability.endDatetime,
+          ),
+          areaAvailability: areaAvailability,
+        }
+
+        return [areaId, datedAvailability]
       },
     ),
   )
 
-  // Reconstruct the Date object from its string representation.
-  const date = new Date(dateString)
-
-  // Return the final tuple with the correct types.
-  return [date, libraryAvailability]
+  return libraryAvailability
 }
 
 /**
@@ -189,10 +191,43 @@ export function deserializeDatedLibraryAvailability(
  */
 export function toLocalISOString(date: Date): string {
   const year = date.getFullYear()
-  const month = (date.getMonth() + 1).toString().padStart(2, "0")
+  const month = (date.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")
   const day = date.getDate().toString().padStart(2, "0")
   const hour = date.getHours().toString().padStart(2, "0")
   const minute = date.getMinutes().toString().padStart(2, "0")
   const second = date.getSeconds().toString().padStart(2, "0")
   return `${year}-${month}-${day}T${hour}:${minute}:${second}`
+}
+
+/**
+ * Checks if a given Date object represents a full hour (e.g., 10:00:00.000).
+ * @param date The Date object to check.
+ * @returns True if the time is on a full hour, otherwise False.
+ */
+export function isFullHour(date: Date): boolean {
+  return (
+    date.getMinutes() === 0 &&
+    date.getSeconds() === 0 &&
+    date.getMilliseconds() === 0
+  )
+}
+
+/**
+ * Sets the year, month, and day of a target date to match a source date.
+ * @param targetDate The date to be modified.
+ * @param sourceDate The date to copy the year, month, and day from.
+ * @returns The modified target date.
+ */
+export function setDate(
+  targetDate: Date,
+  sourceDate: Date,
+): Date {
+  targetDate.setFullYear(
+    sourceDate.getFullYear(),
+    sourceDate.getMonth(),
+    sourceDate.getDate(),
+  )
+  return targetDate
 }

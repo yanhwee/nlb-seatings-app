@@ -10,18 +10,19 @@ import type {
   SeatDetails,
   AreaId,
   SeatId,
-  DatedLibraryAvailability,
   LibraryAvailability,
   AreaAvailability,
   SeatAvailability,
-} from "./types.js"
-import { toLocalISOString } from "./utils.js"
+  DatedAreaAvailability,
+} from "./types.ts"
+import { setDate, toLocalISOString } from "./utils.ts"
 import axios from "axios"
 
+const API_URL = "https://www.nlb.gov.sg/seatbooking/api"
 const API_URL_GET_ACCOUNT_INFO =
-  "https://www.nlb.gov.sg/seatbooking/api/accounts/GetAccountInfo"
+  API_URL + "/accounts/GetAccountInfo"
 const API_URL_SEARCH_AVAILABLE_AREAS =
-  "https://www.nlb.gov.sg/seatbooking/api/areas/SearchAvailableAreas"
+  API_URL + "/areas/SearchAvailableAreas"
 const API_HEADERS = { referer: "https://www.nlb.gov.sg/" }
 
 const BOOKING_TIMESLOT_IN_MINUTES = 15
@@ -42,15 +43,18 @@ async function apiSearchAvailableAreas(
   startDatetime: Date,
   durationInMinutes: number,
 ): Promise<any> {
-  const response = await axios.get(API_URL_SEARCH_AVAILABLE_AREAS, {
-    headers: API_HEADERS,
-    params: {
-      Mode: "OffsiteMode",
-      BranchId: libraryId,
-      StartTime: toLocalISOString(startDatetime),
-      DurationInMinutes: durationInMinutes,
+  const response = await axios.get(
+    API_URL_SEARCH_AVAILABLE_AREAS,
+    {
+      headers: API_HEADERS,
+      params: {
+        Mode: "OffsiteMode",
+        BranchId: libraryId,
+        StartTime: toLocalISOString(startDatetime),
+        DurationInMinutes: durationInMinutes,
+      },
     },
-  })
+  )
   return response.data
 }
 
@@ -105,7 +109,9 @@ async function getLibraryInfo(): Promise<LibraryInfo> {
   }
 
   function filterBranchMenus(branchMenus: any[]): any[] {
-    return branchMenus.filter((branch) => branch["areas"].length > 0)
+    return branchMenus.filter(
+      (branch) => branch["areas"].length > 0,
+    )
   }
 
   return parseLibraryInfo(filterBranchMenus(branchMenus))
@@ -133,20 +139,84 @@ async function searchAvailableAreas(
   )
 }
 
-async function getDatedLibraryAvailability(
+function getTimeslotIndex(
+  startDatetime: Date,
+  datetime: Date,
+): number {
+  return Math.floor(
+    (datetime.getTime() - startDatetime.getTime()) /
+      BOOKING_TIMESLOT_IN_MILLISECONDS,
+  )
+}
+
+function getNumberOfTimeslots(
+  startDatetime: Date,
+  endDatetime: Date,
+): number {
+  return Math.ceil(
+    (endDatetime.getTime() - startDatetime.getTime()) /
+      BOOKING_TIMESLOT_IN_MILLISECONDS,
+  )
+}
+
+function getTimeslots(
+  startDatetime: Date,
+  endDatetime: Date,
+): Date[] {
+  const numberOfTimeslots = getNumberOfTimeslots(
+    startDatetime,
+    endDatetime,
+  )
+  return Array.from(
+    { length: numberOfTimeslots },
+    (_, i) => i,
+  ).map(
+    (i: number) =>
+      new Date(
+        startDatetime.getTime() +
+          i * BOOKING_TIMESLOT_IN_MILLISECONDS,
+      ),
+  )
+}
+
+async function getLibraryAvailability(
+  libraryInfo: LibraryInfo,
   libraryId: LibraryId,
   date: Date,
-): Promise<DatedLibraryAvailability> {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+): Promise<LibraryAvailability> {
   date.setHours(0, 0, 0, 0)
 
-  if (date.getTime() < today.getTime()) throw new Error()
+  function checkDate() {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date()
+    tomorrow.setHours(0, 0, 0, 0)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return (
+      today.getTime() <= date.getTime() &&
+      date.getTime() <= tomorrow.getTime()
+    )
+  }
 
-  const libraryInfo = await getLibraryInfo()
+  if (!checkDate()) throw new Error()
+
   const libraryDetails = libraryInfo.get(libraryId)
   if (!libraryDetails) throw new Error()
   const areaInfo = libraryDetails.areaInfo
+
+  function getEndDatetime(): Date {
+    const closingTimes = Array.from(areaInfo.values()).map(
+      (areaDetails) => areaDetails.closingTime,
+    )
+    const maxClosingTime = new Date(
+      Math.max(...closingTimes.map((t) => t.getTime())),
+    )
+    const endDatetime = new Date(maxClosingTime)
+    setDate(endDatetime, date)
+    return endDatetime
+  }
+
+  const endDatetime = getEndDatetime()
 
   function getRoundedQuarterHour(): Date {
     const now = new Date()
@@ -156,87 +226,81 @@ async function getDatedLibraryAvailability(
     now.setMinutes(now.getMinutes() + minutesToAdd, 0, 0)
     return now
   }
-  function getOpeningDatetime(): Date {
+  function getStartDatetime(): Date {
     const openingTimes = Array.from(areaInfo.values()).map(
       (areaDetails) => areaDetails.openingTime,
     )
     const minOpeningTime = new Date(
       Math.min(...openingTimes.map((t) => t.getTime())),
     )
-    const openingDatetime = new Date(minOpeningTime)
-    openingDatetime.setFullYear(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-    )
-    if (date.getTime() === today.getTime())
-      return getRoundedQuarterHour()
-    return openingDatetime
-  }
-  function getClosingDatetime(): Date {
-    const closingTimes = Array.from(areaInfo.values()).map(
-      (areaDetails) => areaDetails.closingTime,
-    )
-    const maxClosingTime = new Date(
-      Math.max(...closingTimes.map((t) => t.getTime())),
-    )
-    const closingDatetime = new Date(maxClosingTime)
-    closingDatetime.setFullYear(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-    )
-    return closingDatetime
+    const startDatetime = new Date(minOpeningTime)
+    setDate(startDatetime, date)
+    const quarterHour = getRoundedQuarterHour()
+    if (quarterHour.getTime() > endDatetime.getTime())
+      return endDatetime
+    if (quarterHour.getTime() > startDatetime.getTime())
+      return quarterHour
+    return startDatetime
   }
 
-  const openingDatetime = getOpeningDatetime()
-  const closingDatetime = getClosingDatetime()
+  const startDatetime = getStartDatetime()
 
-  function getNumberOfTimeslots(
-    startTime: Date,
-    endTime: Date,
-  ): number {
-    return Math.floor(
-      (endTime.getTime() - startTime.getTime()) /
-        BOOKING_TIMESLOT_IN_MILLISECONDS,
-    )
-  }
-  function getTimeslots(): Date[] {
-    const numberOfTimeslots = getNumberOfTimeslots(
-      openingDatetime,
-      closingDatetime,
-    )
-    return Array.from({ length: numberOfTimeslots }, (_, i) => i).map(
-      (i: number) =>
-        new Date(
-          openingDatetime.getTime() +
-            i * BOOKING_TIMESLOT_IN_MILLISECONDS,
-        ),
-    )
-  }
-
-  const timeslots: Date[] = getTimeslots()
+  const timeslots: Date[] = getTimeslots(
+    startDatetime,
+    endDatetime,
+  )
 
   function initLibraryAvailability(): LibraryAvailability {
-    const initTimeslots = (areaDetails: AreaDetails) =>
-      Array(
-        getNumberOfTimeslots(
-          areaDetails.openingTime,
-          areaDetails.closingTime,
-        ),
-      ).fill(false)
-
     return new Map(
-      Array.from(areaInfo.entries()).map(([areaId, areaDetails]) => [
-        areaId,
-        new Map(
-          Array.from(areaDetails.seatInfo.keys()).map((seatId) => [
-            seatId,
-            initTimeslots(areaDetails),
-          ]),
-        ),
+      Array.from(areaInfo.entries()).map(
+        ([areaId, areaDetails]) => [
+          areaId,
+          initDatedAreaAvailability(areaDetails),
+        ],
+      ),
+    )
+  }
+  function initDatedAreaAvailability(
+    areaDetails: AreaDetails,
+  ): DatedAreaAvailability {
+    const areaOpeningDatetime = new Date(
+      areaDetails.openingTime,
+    )
+    const areaClosingDatetime = new Date(
+      areaDetails.closingTime,
+    )
+    setDate(areaOpeningDatetime, date)
+    setDate(areaClosingDatetime, date)
+    const areaStartDatetime =
+      startDatetime > areaOpeningDatetime
+        ? startDatetime
+        : areaOpeningDatetime
+    const numberOfTimeslots = getNumberOfTimeslots(
+      areaStartDatetime,
+      areaClosingDatetime,
+    )
+    return {
+      startDatetime: areaStartDatetime,
+      endDatetime: areaClosingDatetime,
+      areaAvailability: initAreaAvailability(
+        areaDetails.seatInfo.keys(),
+        numberOfTimeslots,
+      ),
+    }
+  }
+  function initAreaAvailability(
+    seatIds: Iterable<SeatId>,
+    numberOfTimeslots: number,
+  ): AreaAvailability {
+    return new Map(
+      Array.from(seatIds).map((seatId) => [
+        seatId,
+        initSeatAvailability(numberOfTimeslots),
       ]),
     )
+  }
+  function initSeatAvailability(numberOfTimeslots: number) {
+    return Array(numberOfTimeslots).fill(false)
   }
 
   function updateLibraryAvailabilty(
@@ -250,56 +314,62 @@ async function getDatedLibraryAvailability(
       if (!areaDetails) throw new Error()
       if (!areaAvailability) throw new Error()
 
-      const areaOpeningTime = areaDetails.openingTime
-      areaOpeningTime.setFullYear(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-      )
-
-      const seatAvailabilityIndex = Math.floor(
-        (timeslot.getTime() - areaOpeningTime.getTime()) /
-          BOOKING_TIMESLOT_IN_MILLISECONDS,
-      )
-
-      updateAreaAvailability(
+      updateDatedAreaAvailability(
         areaAvailability,
-        seatAvailabilityIndex,
+        timeslot,
         seatIds,
       )
     }
   }
-  function updateAreaAvailability(
-    areaAvailability: AreaAvailability,
-    seatAvailabilityIndex: number,
+  function updateDatedAreaAvailability(
+    {
+      startDatetime: areaStartDatetime,
+      areaAvailability,
+    }: DatedAreaAvailability,
+    timeslot: Date,
     seatIds: SeatId[],
   ): void {
+    const timeslotIndex = getTimeslotIndex(
+      areaStartDatetime,
+      timeslot,
+    )
+    updateAreaAvailability(
+      areaAvailability,
+      timeslotIndex,
+      seatIds,
+    )
+  }
+  function updateAreaAvailability(
+    areaAvailability: AreaAvailability,
+    timeslotIndex: number,
+    seatIds: SeatId[],
+  ) {
     for (const seatId of seatIds) {
       const seatAvailability = areaAvailability.get(seatId)
       if (!seatAvailability) throw new Error()
 
-      updateSeatAvailability(seatAvailability, seatAvailabilityIndex)
+      updateSeatAvailability(seatAvailability, timeslotIndex)
     }
   }
   function updateSeatAvailability(
     seatAvailability: SeatAvailability,
-    seatAvailabilityIndex: number,
+    timeslotIndex: number,
   ): void {
-    seatAvailability[seatAvailabilityIndex] = true
-    if (seatAvailabilityIndex + 1 < seatAvailability.length)
-      seatAvailability[seatAvailabilityIndex + 1] = true
+    seatAvailability[timeslotIndex] = true
+    if (timeslotIndex + 1 < seatAvailability.length)
+      seatAvailability[timeslotIndex + 1] = true
   }
 
   const libraryAvailability = initLibraryAvailability()
 
-  const searches: Promise<Map<AreaId, SeatId[]>>[] = timeslots.map(
-    (timeslot) =>
+  const searches: Promise<Map<AreaId, SeatId[]>>[] =
+    timeslots.map((timeslot) =>
       searchAvailableAreas(
         libraryId,
         timeslot,
         MIN_BOOKING_DURATION_IN_MINUTES,
       ),
-  )
+    )
 
   for (let i = 0; i < timeslots.length; i++) {
     const timeslot = timeslots[i]
@@ -313,7 +383,12 @@ async function getDatedLibraryAvailability(
     )
   }
 
-  return [openingDatetime, libraryAvailability]
+  return libraryAvailability
 }
 
-export { getLibraryInfo, getDatedLibraryAvailability }
+export {
+  getLibraryInfo,
+  getLibraryAvailability,
+  getNumberOfTimeslots,
+  getTimeslots,
+}

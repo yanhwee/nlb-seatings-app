@@ -1,0 +1,25 @@
+/* Area Availability Table */
+
+.area-availability-table {
+  display: grid;
+  gap: 0.5px;
+}
+
+.area-availability-table__cell {
+  outline-color: lightgray;
+  outline-style: solid;
+  outline-width: 0.5px;
+}
+
+.area-availability-table__cell--hour {
+}
+
+.area-availability-table__cell--available {
+  /* transparent, empty cell */
+}
+
+.area-availability-table__cell--reserved {
+  background-color: lightgray;
+  padding: 0.5px;
+  background-clip: content-box;
+}
