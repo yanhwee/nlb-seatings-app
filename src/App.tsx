@@ -27,9 +27,10 @@ function AreaAvailabilityTable({
   const numberOfTimeslots = timeslots.length
   const numberOfSeats = areaAvailability.size
   const cellWidth = 20
-  const cellHeight = 20
+  const cellHeight = 30
   return (
     <div
+      id="area-availability-table"
       className="area-availability-table"
       style={{
         gridTemplateColumns:
@@ -40,21 +41,24 @@ function AreaAvailabilityTable({
           `repeat(${numberOfSeats}, ${cellHeight}px)`,
       }}
     >
-      {/* top left cell */}
-      <div></div>
+      <div className="area-availability-table__top-left-cell">
+        {/* top left cell */}
+      </div>
 
       {/* timeslot header */}
-      <React.Fragment key={-1}>
-        {timeslots.map((timeslot, timeslotIndex) => (
-          <div key={timeslotIndex}>
+      {timeslots.map((timeslot, timeslotIndex) => (
+        <div
+          key={timeslotIndex}
+          className="area-availability-table__time-header"
+        >
+          <div className="area-availability-table__time-header-label">
             {isFullHour(timeslot)
               ? timeslot.getHours() % 12
               : ""}
           </div>
-        ))}
-      </React.Fragment>
+        </div>
+      ))}
 
-      {/* seat rows */}
       {Array.from(areaAvailability.entries()).map(
         ([seatId, seatAvailability]) => {
           const seatDetails = seatInfo.get(seatId)
@@ -63,20 +67,24 @@ function AreaAvailabilityTable({
           return (
             <React.Fragment key={seatId}>
               {/* seat name header */}
-              <div key={-1}>{seatName}</div>
+              <div className="area-availability-table__seat-header">
+                {seatName}
+              </div>
+
               {/* availability cells */}
-              {seatAvailability.map(
-                (isAvailable, isAvailableIndex) => (
-                  <div
-                    key={isAvailableIndex}
-                    className={
-                      "area-availability-table__cell " +
-                      "area-availability-table__cell--" +
-                      (isAvailable ? "available" : "reserved")
-                    }
-                  ></div>
-                ),
-              )}
+              {seatAvailability.map((isAvailable, index) => (
+                <div
+                  key={index}
+                  className={
+                    "area-availability-table__cell" +
+                    " area-availability-table__cell--" +
+                    (isAvailable ? "available" : "reserved") +
+                    (isFullHour(timeslots[index])
+                      ? " area-availability-table__cell--hour"
+                      : "")
+                  }
+                ></div>
+              ))}
             </React.Fragment>
           )
         },
@@ -101,10 +109,12 @@ function App() {
   if (!datedAreaAvailability) throw new Error()
 
   return (
-    <AreaAvailabilityTable
-      areaDetails={areaDetails}
-      datedAreaAvailability={datedAreaAvailability}
-    />
+    <>
+      <AreaAvailabilityTable
+        areaDetails={areaDetails}
+        datedAreaAvailability={datedAreaAvailability}
+      />
+    </>
   )
 }
 

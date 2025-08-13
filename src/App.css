@@ -1,25 +1,76 @@
 /* Area Availability Table */
 
+#area-availability-table {
+  overflow: scroll;
+  width: 100%;
+  height: 400px;
+}
+
 .area-availability-table {
+  --grid-line-weight: 0.4px;
+
   display: grid;
-  gap: 0.5px;
+  gap: var(--grid-line-weight);
+}
+
+.area-availability-table__top-left-cell {
+  background-color: white;
+  position: sticky;
+  top: 0px;
+  left: 0px;
+  box-shadow: 0px 0px 0px var(--grid-line-weight) white;
+  z-index: 999;
+}
+
+.area-availability-table__time-header {
+  background-color: white;
+  position: sticky;
+  top: 0px;
+  box-shadow: 0px 0px 0px var(--grid-line-weight) white;
+  margin-bottom: 1px;
+}
+
+.area-availability-table__time-header-label {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  width: 0px;
+  color: #4f4f4f;
+  font-size: 12;
+  position: relative;
+  left: calc(var(--grid-line-weight) / -2);
+}
+
+.area-availability-table__seat-header {
+  align-content: center;
+  margin-right: 6px;
+  position: sticky;
+  left: 0px;
+  background-color: white;
+  box-shadow: 0px 0px 0px var(--grid-line-weight) white;
+  color: #333333;
+  font-size: 13;
 }
 
 .area-availability-table__cell {
-  outline-color: lightgray;
-  outline-style: solid;
-  outline-width: 0.5px;
+  --cell-outline-color: #e0e0e0;
+
+  box-shadow: 0px 0px 0px var(--grid-line-weight)
+    var(--cell-outline-color);
 }
 
 .area-availability-table__cell--hour {
+  box-shadow:
+    var(--grid-line-weight) 0px 0px var(--grid-line-weight)
+      var(--cell-outline-color),
+    0px 0px 0px var(--grid-line-weight) #bdbdbd;
 }
 
 .area-availability-table__cell--available {
-  /* transparent, empty cell */
+  background-color: white;
 }
 
 .area-availability-table__cell--reserved {
-  background-color: lightgray;
-  padding: 0.5px;
-  background-clip: content-box;
+  background-color: #e0e0e0;
+  border: 0.2px solid white;
 }
