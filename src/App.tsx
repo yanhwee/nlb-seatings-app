@@ -5,7 +5,7 @@ import {
   cachedLibraryInfo,
 } from "./cache"
 import { getTimeslots } from "./service"
-import { isFullHour, isSameDay } from "./utils"
+import { formatDate, isFullHour, isSameDay } from "./utils"
 import type {
   AreaDetails,
   AreaId,
@@ -14,6 +14,11 @@ import type {
   LibraryId,
   LibraryInfo,
 } from "./types"
+import {
+  FiBookOpen,
+  FiCalendar,
+  FiMapPin,
+} from "react-icons/fi"
 
 interface AreaAvailabilityTableProps {
   areaDetails: AreaDetails
@@ -30,70 +35,60 @@ function AreaAvailabilityTable({
   const seatInfo = areaDetails.seatInfo
   const numberOfTimeslots = timeslots.length
   const numberOfSeats = areaAvailability.size
-  const cellWidth = 20
-  const cellHeight = 30
+
+  const cellWidthPx = 5
+  const cellHeightPx = 24
   return (
-    <div
+    <table
       id="area-availability-table"
       className="area-availability-table"
-      style={{
-        gridTemplateColumns:
-          "max-content " +
-          `repeat(${numberOfTimeslots}, ${cellWidth}px)`,
-        gridTemplateRows:
-          "max-content " +
-          `repeat(${numberOfSeats}, ${cellHeight}px)`,
-      }}
     >
-      <div className="area-availability-table__top-left-cell">
-        {/* top left cell */}
-      </div>
-
-      {/* timeslot header */}
-      {timeslots.map((timeslot, timeslotIndex) => (
-        <div
-          key={timeslotIndex}
-          className="area-availability-table__time-header"
-        >
-          <div className="area-availability-table__time-header-label">
-            {isFullHour(timeslot)
-              ? timeslot.getHours() % 12
-              : ""}
-          </div>
-        </div>
-      ))}
-
-      {Array.from(areaAvailability.entries()).map(
-        ([seatId, seatAvailability]) => {
-          const seatDetails = seatInfo.get(seatId)
-          if (!seatDetails) throw new Error()
-          const seatName = seatDetails.name
-          return (
-            <React.Fragment key={seatId}>
-              {/* seat name header */}
-              <div className="area-availability-table__seat-header">
-                {seatName}
+      <thead>
+        <tr>
+          <th className="area-availability-table__top-left-cell"></th>
+          {timeslots.map((timeslot, index) => (
+            <th
+              key={index}
+              className="area-availability-table__time-label-cell"
+              style={{ minWidth: `${cellWidthPx}px` }}
+            >
+              <div className="area-availability-table__time-label">
+                {isFullHour(timeslot)
+                  ? timeslot.getHours()
+                  : ""}
               </div>
-
-              {/* availability cells */}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {Array.from(areaAvailability.entries()).map(
+          ([seatId, seatAvailability]) => (
+            <tr>
+              <th
+                className="area-availability-table__seat-label-cell"
+                style={{ height: `${cellHeightPx}px` }}
+              >
+                {seatInfo.get(seatId)?.name}
+              </th>
               {seatAvailability.map((isAvailable, index) => (
-                <div
+                <td
                   key={index}
-                  className={
-                    "area-availability-table__cell" +
-                    " area-availability-table__cell--" +
-                    (isAvailable ? "available" : "reserved") +
-                    (isFullHour(timeslots[index])
-                      ? " area-availability-table__cell--hour"
-                      : "")
-                  }
-                ></div>
+                  className={[
+                    "area-availability-table__cell",
+                    "area-availability-table__cell--" +
+                      (isAvailable ? "available" : "reserved"),
+                    isFullHour(timeslots[index])
+                      ? "area-availability-table__cell--hour"
+                      : "",
+                  ].join(" ")}
+                ></td>
               ))}
-            </React.Fragment>
-          )
-        },
-      )}
-    </div>
+            </tr>
+          ),
+        )}
+      </tbody>
+    </table>
   )
 }
 
@@ -105,25 +100,32 @@ interface SelectLibraryProps {
 
 function SelectLibrary({
   libraryInfo,
-  selectedLibraryId: libraryId,
-  handleSelectLibraryId: setLibraryId,
+  selectedLibraryId,
+  handleSelectLibraryId,
 }: SelectLibraryProps) {
   return (
-    <fieldset>
-      <legend>Library</legend>
+    <label className="custom-form-group">
+      <FiMapPin className="custom-form-group-icon" />
       <select
-        value={libraryId}
-        onChange={(e) => setLibraryId(parseInt(e.target.value))}
+        className="custom-select"
+        value={selectedLibraryId}
+        onChange={(e) =>
+          handleSelectLibraryId(parseInt(e.target.value))
+        }
       >
         {Array.from(libraryInfo.entries()).map(
           ([libraryId, libraryDetails]) => (
-            <option key={libraryId} value={libraryId}>
+            <option
+              className="custom-select-option"
+              key={libraryId}
+              value={libraryId}
+            >
               {libraryDetails.name}
             </option>
           ),
         )}
       </select>
-    </fieldset>
+    </label>
   )
 }
 
@@ -135,15 +137,18 @@ interface SelectAreaProps {
 
 function SelectArea({
   areaInfo,
-  selectedAreaId: areaId,
-  handleSelectAreaId: setAreaId,
+  selectedAreaId,
+  handleSelectAreaId,
 }: SelectAreaProps) {
   return (
-    <fieldset>
-      <legend>Area</legend>
+    <label className="custom-form-group">
+      <FiBookOpen className="custom-form-group-icon" />
       <select
-        value={areaId}
-        onChange={(e) => setAreaId(parseInt(e.target.value))}
+        className="custom-select"
+        value={selectedAreaId}
+        onChange={(e) =>
+          handleSelectAreaId(parseInt(e.target.value))
+        }
       >
         {Array.from(areaInfo.entries()).map(
           ([areaId, areaDetails]) => (
@@ -153,7 +158,7 @@ function SelectArea({
           ),
         )}
       </select>
-    </fieldset>
+    </label>
   )
 }
 
@@ -170,25 +175,29 @@ function SelectDate({
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   return (
-    <fieldset>
-      <legend>Date</legend>
-      <label>
-        <input
-          type="radio"
-          checked={isSameDay(selectedDate, today)}
-          onChange={(e) => handleSelectDate(today)}
-        />
-        {today.toDateString()}
-      </label>
-      <label>
-        <input
-          type="radio"
-          checked={isSameDay(selectedDate, tomorrow)}
-          onChange={(e) => handleSelectDate(tomorrow)}
-        />
-        {tomorrow.toDateString()}
-      </label>
-    </fieldset>
+    <div className="custom-form-group">
+      <FiCalendar className="custom-form-group-icon" />
+      <fieldset className="custom-radio-fieldset">
+        <label className="custom-radio-label">
+          <input
+            className="custom-radio-button"
+            type="radio"
+            checked={isSameDay(selectedDate, today)}
+            onChange={(e) => handleSelectDate(today)}
+          />
+          {`Today (${formatDate(today)})`}
+        </label>
+        <label className="custom-radio-label">
+          <input
+            className="custom-radio-button"
+            type="radio"
+            checked={isSameDay(selectedDate, tomorrow)}
+            onChange={(e) => handleSelectDate(tomorrow)}
+          />
+          {`Tomorrow (${formatDate(tomorrow)})`}
+        </label>
+      </fieldset>
+    </div>
   )
 }
 
@@ -236,15 +245,18 @@ function App() {
         selectedLibraryId={libraryId}
         handleSelectLibraryId={handleSelectLibraryId}
       />
+      <div className="dashed-divider" />
       <SelectArea
         areaInfo={areaInfo}
         selectedAreaId={areaId}
         handleSelectAreaId={setAreaId}
       />
+      <div className="dashed-divider" />
       <SelectDate
         selectedDate={date}
         handleSelectDate={setDate}
       />
+      <div className="solid-divider" />
       <AreaAvailabilityTable
         areaDetails={areaDetails}
         datedAreaAvailability={datedAreaAvailability}

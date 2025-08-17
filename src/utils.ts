@@ -246,3 +246,17 @@ export function isSameDay(date1: Date, date2: Date): boolean {
     date1.getDate() === date2.getDate()
   )
 }
+
+/**
+ * Formats a given Date object into a string like "23 Jul".
+ *
+ * @param date The date to format.
+ * @returns A formatted date string.
+ */
+export function formatDate(date: Date): string {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
+  })
+  return formatter.format(date)
+}
