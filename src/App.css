@@ -1,134 +1,4 @@
-/* Area Availability Table */
-
-#area-availability-table {
-  margin: 0px 12px;
-}
-
-.area-availability-table {
-  --grid-line-weight: 0.4px;
-
-  border-collapse: collapse;
-  table-layout: fixed;
-  width: 100%;
-  /* display: block; */
-  /* overflow: scroll; */
-  /* width: 90%; */
-}
-
-.area-availability-table__top-left-cell {
-  background-color: white;
-  position: sticky;
-  top: 0px;
-  left: 0px;
-  z-index: 1;
-}
-
-.area-availability-table__time-label-cell {
-  background-color: white;
-  position: sticky;
-  top: 0px;
-  /* width: auto; */
-}
-
-.area-availability-table__time-label {
-  display: flex;
-  width: 0px;
-  justify-content: center;
-  position: relative;
-  left: calc(var(--grid-line-weight) / -2);
-
-  color: #4f4f4f;
-  font-weight: normal;
-  font-size: 12px;
-}
-
-.area-availability-table__seat-label-cell {
-  background-color: white;
-  position: sticky;
-  left: 0px;
-  padding-right: 12px;
-
-  color: #333333;
-  font-weight: normal;
-  font-size: 13px;
-  text-align: left;
-}
-
-.area-availability-table__cell {
-  border: var(--grid-line-weight) dotted #e0e0e0;
-}
-
-.area-availability-table__cell--hour {
-  border-left: var(--grid-line-weight) solid #e0e0e0;
-}
-
-.area-availability-table__cell--available {
-  background-color: white;
-}
-
-.area-availability-table__cell--reserved {
-  background-color: #e0e0e0;
-  padding: 0.5px;
-  background-clip: content-box;
-}
-
-/* control */
-
-.custom-form-group {
-  border: none;
-  margin: 0px;
-
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  height: 36px;
-}
-
-.custom-form-group-icon {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-}
-
-/* select */
-
-.custom-select {
-  border: none;
-  flex-grow: 1;
-  height: 100%;
-  font-size: 14px;
-}
-
-/* radio */
-
-.custom-radio-fieldset {
-  border: none;
-  padding: 0 0 0 6px;
-  margin: 0;
-  flex-grow: 1;
-  height: 100%;
-
-  display: flex;
-  gap: 24px;
-}
-
-.custom-radio-label {
-  font-size: 14px;
-  height: 100%;
-
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.custom-radio-button {
-  width: 14px;
-  height: 14px;
-  margin: 0px;
-}
-
-/* horizontal divider */
+/* horizontal dividers */
 
 .dashed-divider {
   border-bottom: 0.5px dashed #bdbdbd;
@@ -136,4 +6,25 @@
 
 .solid-divider {
   border-bottom: 1px solid #d9d9d9;
+}
+
+/* view map */
+
+#view-map-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#view-map-button__icon {
+  width: 20px;
+  height: 20px;
+}
+
+#view-map-button__icon {
+  font-size: 12px;
 }
