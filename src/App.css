@@ -8,23 +8,20 @@
   border-bottom: 1px solid #d9d9d9;
 }
 
-/* view map */
+/* view map and legend container */
 
-#view-map-button {
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  height: 30px;
+.view-map-legend-container {
+  margin: 10px 12px;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  justify-content: space-between;
 }
 
-#view-map-button__icon {
-  width: 20px;
-  height: 20px;
-}
+/* app container */
 
-#view-map-button__icon {
-  font-size: 12px;
+.app-container {
+  width: 100%;
+  height: 100vh;
+  display: grid;
+  gap: 0px;
+  grid-template-rows: repeat(7, min-content) auto;
 }

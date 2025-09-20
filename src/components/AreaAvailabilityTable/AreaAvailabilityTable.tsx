@@ -3,7 +3,7 @@ import type {
   AreaDetails,
   DatedAreaAvailability,
 } from "../../types"
-import { isFullHour } from "../../utils"
+import { format24HourTime, isFullHour } from "../../utils"
 import styles from "./AreaAvailabilityTable.module.css"
 
 interface AreaAvailabilityTableProps {
@@ -19,10 +19,8 @@ function AreaAvailabilityTable({
     datedAreaAvailability
   const timeslots = getTimeslots(startDatetime, endDatetime)
   const seatInfo = areaDetails.seatInfo
-  const numberOfTimeslots = timeslots.length
-  const numberOfSeats = areaAvailability.size
 
-  const tableWidthPercent = 100
+  const tableWidthPercent = 150
   const cellHeightPx = 24
   return (
     <div className={styles["table-viewer"]}>
@@ -31,17 +29,31 @@ function AreaAvailabilityTable({
         style={{ width: `${tableWidthPercent}%` }}
       >
         <thead>
-          <tr>
-            <th className={styles["table__top-left-cell"]} />
+          <tr className={styles["top-header"]}>
+            <th className={styles["top-left-cell"]}></th>
             {timeslots.map((timeslot, index) => (
               <th
                 key={index}
-                className={styles["table__time-label-cell"]}
+                className={styles["time-header-cell"]}
               >
-                <div className={styles["table__time-label"]}>
-                  {isFullHour(timeslot)
-                    ? timeslot.getHours()
-                    : ""}
+                <div
+                  className={
+                    styles["time-header-label-wrapper"]
+                  }
+                >
+                  <div
+                    className={[
+                      styles["time-header-label"],
+                      styles[
+                        "time-header-label--" +
+                          (isFullHour(timeslot)
+                            ? "full-hour"
+                            : "quarter-hour")
+                      ],
+                    ].join(" ")}
+                  >
+                    {format24HourTime(timeslot)}
+                  </div>
                 </div>
               </th>
             ))}
@@ -52,8 +64,10 @@ function AreaAvailabilityTable({
             ([seatId, seatAvailability]) => (
               <tr>
                 <th
-                  className={styles["table__seat-label-cell"]}
-                  style={{ height: `${cellHeightPx}px` }}
+                  className={styles["seat-header-cell"]}
+                  style={{
+                    height: `${cellHeightPx}px`,
+                  }}
                 >
                   {seatInfo.get(seatId)?.name}
                 </th>
@@ -61,15 +75,15 @@ function AreaAvailabilityTable({
                   <td
                     key={index}
                     className={[
-                      styles["table__cell"],
+                      styles["cell"],
                       styles[
-                        "table__cell--" +
+                        "cell--" +
                           (isAvailable
                             ? "available"
                             : "reserved")
                       ],
                       isFullHour(timeslots[index])
-                        ? styles["table__cell--hour"]
+                        ? styles["cell--hour"]
                         : "",
                     ].join(" ")}
                   ></td>

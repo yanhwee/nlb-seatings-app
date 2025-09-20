@@ -4,44 +4,59 @@
 }
 
 .table {
-  --grid-line-weight: 0.4px;
+  --grid-line-weight: 0.1px;
 
   border-collapse: collapse;
 }
 
-.table__top-left-cell {
+.top-header {
   background-color: white;
   position: sticky;
   top: 0px;
-  left: 0px;
   z-index: 1;
 }
 
-.table__time-label-cell {
-  background-color: white;
-  position: sticky;
-  top: 0px;
-
-  width: 90vw; /* stretch width */
+.time-header-cell {
+  width: 100vw; /* stretch width */
 }
 
-.table__time-label {
+.time-header-label-wrapper {
+  container-type: inline-size;
+}
+
+.time-header-label {
   display: flex;
   width: 0px;
   justify-content: center;
   position: relative;
   left: calc(var(--grid-line-weight) / -2);
 
-  color: #4f4f4f;
-  font-weight: normal;
   font-size: 12px;
+  font-weight: normal;
 }
 
-.table__seat-label-cell {
+.time-header-label--full-hour {
+  color: #4f4f4f;
+}
+
+.time-header-label--quarter-hour {
+  color: #969696;
+  /* color: #828282; */
+}
+
+@container (width < 40px) {
+  .time-header-label--quarter-hour {
+    visibility: hidden;
+  }
+}
+
+.seat-header-cell {
   background-color: white;
   position: sticky;
   left: 0px;
   padding-right: 12px;
+  border: var(--grid-line-weight) #cfcfcf;
+  border-style: solid solid solid none;
 
   color: #333333;
   font-weight: normal;
@@ -49,20 +64,22 @@
   text-align: left;
 }
 
-.table__cell {
-  border: var(--grid-line-weight) dotted #e0e0e0;
+.cell {
+  border-width: var(--grid-line-weight);
+  border-style: solid dashed;
+  border-color: #cfcfcf;
 }
 
-.table__cell--hour {
-  border-left: var(--grid-line-weight) solid #e0e0e0;
+.cell--hour {
+  border-width: var(--grid-line-weight);
+  border-style: solid dashed solid solid;
+  border-color: #cfcfcf #cfcfcf #cfcfcf #b8b8b8;
 }
 
-.table__cell--available {
+.cell--available {
   background-color: white;
 }
 
-.table__cell--reserved {
-  background-color: #e0e0e0;
-  padding: 0.5px;
-  background-clip: content-box;
+.cell--reserved {
+  background-color: #e7e7e7;
 }

@@ -5,7 +5,6 @@ import type {
   AreaInfo,
   SeatInfo,
   LibraryAvailability,
-  AreaId,
   SeatId,
   SeatAvailability,
   DatedAreaAvailability,
@@ -235,7 +234,8 @@ export function setDate(
 /**
  * Checks if two Date objects fall on the same calendar day.
  * It compares the year, month, and day of each date, ignoring the time.
- * * @param {Date} date1 The first date to compare.
+ *
+ * @param {Date} date1 The first date to compare.
  * @param {Date} date2 The second date to compare.
  * @returns {boolean} True if both dates are on the same day, false otherwise.
  */
@@ -259,4 +259,16 @@ export function formatDate(date: Date): string {
     month: "short",
   })
   return formatter.format(date)
+}
+
+/**
+ * Formats a Date object into a 24-hour time string (HHMM) with leading zeros.
+ *
+ * @param date The Date object to format.
+ * @returns A string in the "HHMM" format (e.g., "0930" or "1445").
+ */
+export const format24HourTime = (date: Date): string => {
+  const hours = date.getHours().toString().padStart(2, "0")
+  const minutes = date.getMinutes().toString().padStart(2, "0")
+  return `${hours}${minutes}`
 }

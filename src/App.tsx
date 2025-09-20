@@ -9,7 +9,7 @@ import SelectArea from "./components/SelectArea/SelectArea"
 import SelectDate from "./components/SelectDate/SelectDate"
 import SelectLibrary from "./components/SelectLibrary/SelectLibrary"
 import AreaAvailabilityTable from "./components/AreaAvailabilityTable/AreaAvailabilityTable"
-import { FiMap } from "react-icons/fi"
+import ViewMap from "./components/ViewMap/ViewMap"
 import AreaAvailabilityTableLegend from "./components/AreaAvailabilityTableLegend/AreaAvailabilityTableLegend"
 
 function App() {
@@ -50,7 +50,7 @@ function App() {
   if (!areaDetails) throw new Error()
 
   return (
-    <>
+    <div className="app-container">
       <SelectLibrary
         libraryInfo={libraryInfo}
         selectedLibraryId={libraryId}
@@ -68,11 +68,15 @@ function App() {
         handleSelectDate={setDate}
       />
       <div className="solid-divider" />
+      <div className="view-map-legend-container">
+        <ViewMap />
+        <AreaAvailabilityTableLegend />
+      </div>
       <AreaAvailabilityTable
         areaDetails={areaDetails}
         datedAreaAvailability={datedAreaAvailability}
       />
-    </>
+    </div>
   )
 }
 
