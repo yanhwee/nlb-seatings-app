@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { getTimeslots } from "../../service"
 import type {
   AreaDetails,
@@ -9,19 +10,19 @@ import styles from "./AreaAvailabilityTable.module.css"
 interface AreaAvailabilityTableProps {
   areaDetails: AreaDetails
   datedAreaAvailability: DatedAreaAvailability
+  zoomLevel: number
 }
 
 function AreaAvailabilityTable({
   areaDetails,
   datedAreaAvailability,
+  zoomLevel: tableWidthPercent,
 }: AreaAvailabilityTableProps) {
   const { startDatetime, endDatetime, areaAvailability } =
     datedAreaAvailability
   const timeslots = getTimeslots(startDatetime, endDatetime)
   const seatInfo = areaDetails.seatInfo
 
-  const tableWidthPercent = 150
-  const cellHeightPx = 24
   return (
     <div className={styles["table-viewer"]}>
       <table
@@ -62,13 +63,8 @@ function AreaAvailabilityTable({
         <tbody>
           {Array.from(areaAvailability.entries()).map(
             ([seatId, seatAvailability]) => (
-              <tr>
-                <th
-                  className={styles["seat-header-cell"]}
-                  style={{
-                    height: `${cellHeightPx}px`,
-                  }}
-                >
+              <tr key={seatId}>
+                <th className={styles["seat-header-cell"]}>
                   {seatInfo.get(seatId)?.name}
                 </th>
                 {seatAvailability.map((isAvailable, index) => (

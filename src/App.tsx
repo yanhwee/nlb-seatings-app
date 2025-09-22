@@ -11,6 +11,7 @@ import SelectLibrary from "./components/SelectLibrary/SelectLibrary"
 import AreaAvailabilityTable from "./components/AreaAvailabilityTable/AreaAvailabilityTable"
 import ViewMap from "./components/ViewMap/ViewMap"
 import AreaAvailabilityTableLegend from "./components/AreaAvailabilityTableLegend/AreaAvailabilityTableLegend"
+import SelectZoom from "./components/SelectZoom/SelectZoom"
 
 function App() {
   const libraryInfo = cachedLibraryInfo
@@ -49,8 +50,10 @@ function App() {
   if (!datedAreaAvailability) throw new Error()
   if (!areaDetails) throw new Error()
 
+  const [zoomLevel, setZoomLevel] = useState<number>(100)
+
   return (
-    <div className="app-container">
+    <div id="app-container">
       <SelectLibrary
         libraryInfo={libraryInfo}
         selectedLibraryId={libraryId}
@@ -68,13 +71,18 @@ function App() {
         handleSelectDate={setDate}
       />
       <div className="solid-divider" />
-      <div className="view-map-legend-container">
+      <div id="toolbar">
         <ViewMap />
         <AreaAvailabilityTableLegend />
+        <SelectZoom
+          selectedZoomLevel={zoomLevel}
+          handleSelectZoomLevel={setZoomLevel}
+        />
       </div>
       <AreaAvailabilityTable
         areaDetails={areaDetails}
         datedAreaAvailability={datedAreaAvailability}
+        zoomLevel={zoomLevel}
       />
     </div>
   )

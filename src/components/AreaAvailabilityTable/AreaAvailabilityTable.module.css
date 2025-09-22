@@ -1,6 +1,7 @@
 .table-viewer {
   margin: 0px 12px;
   overflow: scroll;
+  touch-action: pan-x pan-y;
 }
 
 .table {
@@ -31,22 +32,24 @@
   position: relative;
   left: calc(var(--grid-line-weight) / -2);
 
-  font-size: 12px;
   font-weight: normal;
 }
 
 .time-header-label--full-hour {
+  font-size: 12px;
   color: #4f4f4f;
 }
 
 .time-header-label--quarter-hour {
+  font-size: 11px;
   color: #969696;
+  visibility: hidden;
   /* color: #828282; */
 }
 
-@container (width < 40px) {
+@container (width >= 45px) {
   .time-header-label--quarter-hour {
-    visibility: hidden;
+    visibility: visible;
   }
 }
 
@@ -65,6 +68,7 @@
 }
 
 .cell {
+  height: 24px;
   border-width: var(--grid-line-weight);
   border-style: solid dashed;
   border-color: #cfcfcf;
