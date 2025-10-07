@@ -1,0 +1,18 @@
+.view-map-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+}
+
+.view-map-button-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.view-map-button-label {
+  font-size: 12px;
+}
