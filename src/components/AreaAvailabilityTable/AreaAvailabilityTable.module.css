@@ -1,7 +1,6 @@
 .table-viewer {
   margin: 0px 12px;
   overflow: scroll;
-  touch-action: pan-x pan-y;
 }
 
 .table {

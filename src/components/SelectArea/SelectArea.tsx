@@ -1,8 +1,5 @@
 import { FiBookOpen } from "react-icons/fi"
-import type {
-  AreaId,
-  AreaInfo,
-} from "../../../../src/lib/types"
+import type { AreaId, AreaInfo } from "@/lib/types"
 import SelectFormGroup from "../SelectFormGroup/SelectFormGroup"
 
 interface SelectAreaProps {

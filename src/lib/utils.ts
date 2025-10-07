@@ -8,7 +8,7 @@ import type {
   SeatId,
   SeatAvailability,
   DatedAreaAvailability,
-} from "../../src/lib/types.js"
+} from "@/lib/types"
 
 /**
  * Converts a LibraryInfo Map into a serializable object.
