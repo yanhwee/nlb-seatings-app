@@ -53,6 +53,7 @@
 }
 
 .seat-header-cell {
+  height: 24px;
   background-color: white;
   position: sticky;
   left: 0px;
@@ -67,7 +68,6 @@
 }
 
 .cell {
-  height: 24px;
   border-width: var(--grid-line-weight);
   border-style: solid dashed;
   border-color: #cfcfcf;

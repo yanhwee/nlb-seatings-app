@@ -18,6 +18,10 @@
   gap: 6px;
 }
 
+.custom-radio-label:has(input:disabled) {
+  color: #a0a0a0;
+}
+
 .custom-radio-button {
   width: 14px;
   height: 14px;

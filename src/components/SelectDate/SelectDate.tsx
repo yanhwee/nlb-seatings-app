@@ -1,20 +1,27 @@
 import { FiCalendar } from "react-icons/fi"
-import { isSameDay, formatDate } from "@/lib/utils"
+import { isSameDay, formatDate, setDate } from "@/lib/utils"
 import styles from "./SelectDate.module.css"
 import FormGroup from "../FormGroup/FormGroup"
+import { AreaDetails } from "@/lib/types"
 
 interface SelectDateProps {
   selectedDate: Date
   handleSelectDate: (date: Date) => void
+  currentDatetime: Date
+  areaDetails: AreaDetails
 }
 
 function SelectDate({
   selectedDate,
   handleSelectDate,
+  currentDatetime,
+  areaDetails,
 }: SelectDateProps) {
-  const today = new Date()
-  const tomorrow = new Date()
+  const today = new Date(currentDatetime)
+  const tomorrow = new Date(currentDatetime)
   tomorrow.setDate(tomorrow.getDate() + 1)
+  const areaClosingDatetime = new Date(areaDetails.closingTime)
+  setDate(areaClosingDatetime, currentDatetime)
   return (
     <FormGroup icon={FiCalendar}>
       <fieldset className={styles["custom-radio-fieldset"]}>
@@ -24,6 +31,7 @@ function SelectDate({
             type="radio"
             checked={isSameDay(selectedDate, today)}
             onChange={(e) => handleSelectDate(today)}
+            disabled={currentDatetime > areaClosingDatetime}
           />
           {`Today (${formatDate(today)})`}
         </label>
@@ -33,6 +41,7 @@ function SelectDate({
             type="radio"
             checked={isSameDay(selectedDate, tomorrow)}
             onChange={(e) => handleSelectDate(tomorrow)}
+            disabled={currentDatetime.getHours() < 12}
           />
           {`Tomorrow (${formatDate(tomorrow)})`}
         </label>

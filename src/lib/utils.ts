@@ -272,3 +272,36 @@ export const format24HourTime = (date: Date): string => {
   const minutes = date.getMinutes().toString().padStart(2, "0")
   return `${hours}${minutes}`
 }
+
+/**
+ * Checks if the given date is today.
+ * @param date The Date object to check.
+ * @returns true if the date is today, false otherwise.
+ */
+export const isToday = (date: Date): boolean => {
+  const today = new Date()
+  // Check year, month, and day to ensure it's the same calendar day.
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  )
+}
+
+/**
+ * Checks if the given date is tomorrow.
+ * @param date The Date object to check.
+ * @returns true if the date is tomorrow, false otherwise.
+ */
+export const isTomorrow = (date: Date): boolean => {
+  const tomorrow = new Date()
+  // Set 'tomorrow' to be exactly one day after 'today'.
+  tomorrow.setDate(tomorrow.getDate() + 1)
+
+  // Check year, month, and day to ensure it's the same calendar day as tomorrow.
+  return (
+    date.getDate() === tomorrow.getDate() &&
+    date.getMonth() === tomorrow.getMonth() &&
+    date.getFullYear() === tomorrow.getFullYear()
+  )
+}

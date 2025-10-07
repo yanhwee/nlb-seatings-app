@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import "./App.css"
+import { cachedLibraryAvailability } from "@/lib/cache"
 import {
-  cachedLibraryAvailability,
-  cachedLibraryInfo,
-} from "@/lib/cache"
-import type { AreaId, LibraryId } from "@/lib/types"
+  DatedAreaAvailability,
+  type AreaId,
+  type LibraryId,
+  type LibraryInfo,
+} from "@/lib/types"
 import SelectArea from "@/components/SelectArea/SelectArea"
 import SelectDate from "@/components/SelectDate/SelectDate"
 import SelectLibrary from "@/components/SelectLibrary/SelectLibrary"
@@ -14,28 +16,49 @@ import AreaAvailabilityTable from "@/components/AreaAvailabilityTable/AreaAvaila
 import ViewMap from "@/components/ViewMap/ViewMap"
 import AreaAvailabilityTableLegend from "@/components/AreaAvailabilityTableLegend/AreaAvailabilityTableLegend"
 import SelectZoom from "@/components/SelectZoom/SelectZoom"
+import { getLibraryAvailability } from "@/lib/server"
 
-function App() {
-  const libraryInfo = cachedLibraryInfo
+interface AppProps {
+  libraryInfo: LibraryInfo
+}
 
-  let defaultLibraryId = libraryInfo.keys().next().value
-  if (!defaultLibraryId) throw new Error()
-  defaultLibraryId = 31
+function App({ libraryInfo }: AppProps) {
+  const defaultLibraryId = 31 //libraryInfo.keys().next().value!
 
   const [libraryId, setLibraryId] =
     useState<LibraryId>(defaultLibraryId)
 
-  const libraryDetails = libraryInfo.get(libraryId)
-  if (!libraryDetails) throw new Error()
+  const libraryDetails = libraryInfo.get(libraryId)!
   const areaInfo = libraryDetails.areaInfo
-
-  const defaultAreaId = areaInfo.keys().next().value
-  if (!defaultAreaId) throw new Error()
+  const defaultAreaId = areaInfo.keys().next().value!
 
   const [areaId, setAreaId] = useState<AreaId>(defaultAreaId)
 
+  const areaDetails = areaInfo.get(areaId)!
+
+  const [date, setDate] = useState<Date>(new Date())
+  const [zoomLevel, setZoomLevel] = useState<number>(100)
+
+  const [datedAreaAvailability, setDatedAreaAvailability] =
+    useState<DatedAreaAvailability>(
+      cachedLibraryAvailability.get(areaId)!,
+    )
+
+  useEffect(() => {
+    async function fetchDatedAreaAvailaibility() {
+      const libraryAvailability = await getLibraryAvailability(
+        libraryId,
+        date,
+      )
+      const datedAreaAvailability =
+        libraryAvailability.get(areaId)!
+      setDatedAreaAvailability(datedAreaAvailability)
+    }
+    fetchDatedAreaAvailaibility()
+  }, [libraryId, areaId, date])
+
   function handleSelectLibraryId(libraryId: LibraryId) {
-    const libraryDetails = libraryInfo.get(libraryId)
+    const libraryDetails = libraryInfo?.get(libraryId)
     if (!libraryDetails) throw new Error()
     const areaInfo = libraryDetails.areaInfo
     const areaId = areaInfo.keys().next().value
@@ -43,16 +66,6 @@ function App() {
     setLibraryId(libraryId)
     setAreaId(areaId)
   }
-
-  const [date, setDate] = useState<Date>(new Date())
-
-  const libraryAvailability = cachedLibraryAvailability
-  const datedAreaAvailability = libraryAvailability.get(areaId)
-  const areaDetails = libraryInfo.get(31)?.areaInfo.get(areaId)
-  if (!datedAreaAvailability) throw new Error()
-  if (!areaDetails) throw new Error()
-
-  const [zoomLevel, setZoomLevel] = useState<number>(100)
 
   return (
     <div id="app-container">
@@ -71,6 +84,8 @@ function App() {
       <SelectDate
         selectedDate={date}
         handleSelectDate={setDate}
+        currentDatetime={new Date()}
+        areaDetails={areaDetails}
       />
       <div className="solid-divider" />
       <div id="toolbar">
