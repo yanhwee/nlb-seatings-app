@@ -1,8 +1,5 @@
 import { FiMapPin } from "react-icons/fi"
-import type {
-  LibraryInfo,
-  LibraryId,
-} from "../../../../src/lib/types"
+import type { LibraryInfo, LibraryId } from "@/lib/types"
 import SelectFormGroup from "../SelectFormGroup/SelectFormGroup"
 
 interface SelectLibraryProps {

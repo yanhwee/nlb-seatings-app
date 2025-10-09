@@ -30,7 +30,7 @@ function SelectDate({
             className={styles["custom-radio-button"]}
             type="radio"
             checked={isSameDay(selectedDate, today)}
-            onChange={(e) => handleSelectDate(today)}
+            onChange={() => handleSelectDate(today)}
             disabled={currentDatetime > areaClosingDatetime}
           />
           {`Today (${formatDate(today)})`}
@@ -40,7 +40,7 @@ function SelectDate({
             className={styles["custom-radio-button"]}
             type="radio"
             checked={isSameDay(selectedDate, tomorrow)}
-            onChange={(e) => handleSelectDate(tomorrow)}
+            onChange={() => handleSelectDate(tomorrow)}
             disabled={currentDatetime.getHours() < 12}
           />
           {`Tomorrow (${formatDate(tomorrow)})`}
