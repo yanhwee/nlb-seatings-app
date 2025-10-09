@@ -1,10 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import "./App.css"
-import { cachedLibraryAvailability } from "@/lib/cache"
+import * as utils from "@/lib/utils"
 import {
-  DatedAreaAvailability,
   type AreaId,
   type LibraryId,
   type LibraryInfo,
@@ -16,7 +15,7 @@ import AreaAvailabilityTable from "@/components/AreaAvailabilityTable/AreaAvaila
 import ViewMap from "@/components/ViewMap/ViewMap"
 import AreaAvailabilityTableLegend from "@/components/AreaAvailabilityTableLegend/AreaAvailabilityTableLegend"
 import SelectZoom from "@/components/SelectZoom/SelectZoom"
-import { getLibraryAvailability } from "@/lib/server"
+import { useLibraryAvailability } from "@/lib/client"
 
 interface AppProps {
   libraryInfo: LibraryInfo
@@ -36,26 +35,19 @@ function App({ libraryInfo }: AppProps) {
 
   const areaDetails = areaInfo.get(areaId)!
 
-  const [date, setDate] = useState<Date>(new Date())
+  const defaultDate = new Date()
+  const areaClosingDatetime = new Date(areaDetails.closingTime)
+  utils.setDate(areaClosingDatetime, defaultDate)
+  if (defaultDate.getTime() >= areaClosingDatetime.getTime())
+    defaultDate.setDate(defaultDate.getDate() + 1)
+  const [date, setDate] = useState<Date>(defaultDate)
+
   const [zoomLevel, setZoomLevel] = useState<number>(100)
 
-  const [datedAreaAvailability, setDatedAreaAvailability] =
-    useState<DatedAreaAvailability>(
-      cachedLibraryAvailability.get(areaId)!,
-    )
+  const { libraryAvailability, isLoading, isError } =
+    useLibraryAvailability(libraryId, date)
 
-  useEffect(() => {
-    async function fetchDatedAreaAvailaibility() {
-      const libraryAvailability = await getLibraryAvailability(
-        libraryId,
-        date,
-      )
-      const datedAreaAvailability =
-        libraryAvailability.get(areaId)!
-      setDatedAreaAvailability(datedAreaAvailability)
-    }
-    fetchDatedAreaAvailaibility()
-  }, [libraryId, areaId, date])
+  const datedAreaAvailability = libraryAvailability?.get(areaId)
 
   function handleSelectLibraryId(libraryId: LibraryId) {
     const libraryDetails = libraryInfo?.get(libraryId)
@@ -96,11 +88,17 @@ function App({ libraryInfo }: AppProps) {
           handleSelectZoomLevel={setZoomLevel}
         />
       </div>
-      <AreaAvailabilityTable
-        areaDetails={areaDetails}
-        datedAreaAvailability={datedAreaAvailability}
-        zoomLevel={zoomLevel}
-      />
+      {isLoading ? (
+        <div className="center-div">Loading...</div>
+      ) : isError ? (
+        <div className="center-div">Failed to fetch data</div>
+      ) : (
+        <AreaAvailabilityTable
+          areaDetails={areaDetails}
+          datedAreaAvailability={datedAreaAvailability!}
+          zoomLevel={zoomLevel}
+        />
+      )}
     </div>
   )
 }

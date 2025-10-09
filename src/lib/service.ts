@@ -14,7 +14,7 @@ import type {
   AreaAvailability,
   SeatAvailability,
   DatedAreaAvailability,
-} from "./types.ts"
+} from "@/lib/types.ts"
 import { setDate, toLocalISOString } from "@/lib/utils"
 import axios from "axios"
 
@@ -59,6 +59,11 @@ async function apiSearchAvailableAreas(
 }
 
 async function getLibraryInfo(): Promise<LibraryInfo> {
+  console.log(
+    "%s service.getLibraryInfo()",
+    new Date().toLocaleString(),
+  )
+
   const accountInfo = await apiGetAccountInfo()
   const menus = accountInfo["settings"]["menus"]
   const branchMenus = menus["branchMenus"]
@@ -184,6 +189,13 @@ async function getLibraryAvailability(
   libraryId: LibraryId,
   date: Date,
 ): Promise<LibraryAvailability> {
+  console.log(
+    "%s service.getLibraryAvailability(%d, %s)",
+    new Date().toLocaleString(),
+    libraryId,
+    date.toLocaleString(),
+  )
+
   date.setHours(0, 0, 0, 0)
 
   function checkDate() {

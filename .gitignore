@@ -41,4 +41,4 @@ yarn-error.log*
 next-env.d.ts
 
 # project
-src/lib/cache.ts
+src/lib/stub.ts

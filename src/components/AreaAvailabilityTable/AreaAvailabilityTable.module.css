@@ -1,4 +1,5 @@
 .table-viewer {
+  height: 100%;
   margin: 0px 12px;
   overflow: scroll;
 }
@@ -20,7 +21,7 @@
   width: 100vw; /* stretch width */
 }
 
-.time-header-label-wrapper {
+.time-header-cell-container {
   container-type: inline-size;
 }
 
@@ -49,6 +50,18 @@
 @container (width >= 45px) {
   .time-header-label--quarter-hour {
     visibility: visible;
+  }
+}
+
+@container (width < 7px) {
+  .top-header
+    > .time-header-cell:nth-child(
+      even of :has(.time-header-label--full-hour)
+    )
+    > .time-header-cell-container
+    > .time-header-label {
+    visibility: hidden;
+    /* border: 1px solid black; */
   }
 }
 

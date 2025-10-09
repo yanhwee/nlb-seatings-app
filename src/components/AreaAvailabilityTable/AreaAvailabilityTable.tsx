@@ -38,7 +38,7 @@ function AreaAvailabilityTable({
               >
                 <div
                   className={
-                    styles["time-header-label-wrapper"]
+                    styles["time-header-cell-container"]
                   }
                 >
                   <div

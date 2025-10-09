@@ -1,7 +1,16 @@
 .custom-select {
   border: none;
-  flex-grow: 1;
   height: 100%;
+  width: 100%;
   font-size: 14px;
   background-color: transparent;
+  text-overflow: ellipsis;
+}
+
+.custom-select:focus {
+  outline: none;
+}
+
+.custom-select:focus-visible {
+  outline: auto;
 }
