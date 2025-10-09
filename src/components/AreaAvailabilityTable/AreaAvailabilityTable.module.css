@@ -44,7 +44,6 @@
   font-size: 11px;
   color: #969696;
   visibility: hidden;
-  /* color: #828282; */
 }
 
 @container (width >= 45px) {
@@ -61,7 +60,6 @@
     > .time-header-cell-container
     > .time-header-label {
     visibility: hidden;
-    /* border: 1px solid black; */
   }
 }
 

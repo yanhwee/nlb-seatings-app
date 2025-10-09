@@ -15,6 +15,7 @@ type AreaDetails = {
   openingTime: Date
   closingTime: Date
   seatInfo: SeatInfo
+  code: string
 }
 type SeatDetails = {
   name: string

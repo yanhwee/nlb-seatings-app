@@ -81,7 +81,7 @@ function App({ libraryInfo }: AppProps) {
       />
       <div className="solid-divider" />
       <div id="toolbar">
-        <ViewMap />
+        <ViewMap libraryId={libraryId} areaId={areaId} />
         <AreaAvailabilityTableLegend />
         <SelectZoom
           selectedZoomLevel={zoomLevel}

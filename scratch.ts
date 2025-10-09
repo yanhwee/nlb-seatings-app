@@ -1,21 +1,16 @@
 import {
-  getLibraryAvailability,
+  getLibraryAreasMapUrl,
   getLibraryInfo,
-} from "@/lib/service"
-import { serializeLibraryAvailability } from "@/lib/utils"
+} from "./src/lib/service"
 
 async function main() {
+  const libraryId = 16
   const libraryInfo = await getLibraryInfo()
-  // console.log(serializeLibraryInfo(libraryInfo))
-  const today = new Date()
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const data = await getLibraryAvailability(
-    libraryInfo,
-    31,
-    tomorrow,
-  )
-  console.log(serializeLibraryAvailability(data))
+  const libraryDetails = libraryInfo.get(libraryId)!
+  const areaInfo = libraryDetails.areaInfo
+  const urls = await getLibraryAreasMapUrl(libraryId, areaInfo)
+  console.log(urls.size)
+  console.log(urls)
 }
 
 main()

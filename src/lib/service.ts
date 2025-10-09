@@ -16,7 +16,6 @@ import type {
   DatedAreaAvailability,
 } from "@/lib/types.ts"
 import { setDate, toLocalISOString } from "@/lib/utils"
-import axios from "axios"
 
 const API_URL = "https://www.nlb.gov.sg/seatbooking/api"
 const API_URL_GET_ACCOUNT_INFO =
@@ -24,6 +23,9 @@ const API_URL_GET_ACCOUNT_INFO =
 const API_URL_SEARCH_AVAILABLE_AREAS =
   API_URL + "/areas/SearchAvailableAreas"
 const API_HEADERS = { referer: "https://www.nlb.gov.sg/" }
+
+const AREA_MAP_IMAGE_URL =
+  "https://www.nlb.gov.sg/seatbooking/img/areas/"
 
 const BOOKING_TIMESLOT_IN_MINUTES = 15
 const MIN_BOOKING_DURATION_IN_MINUTES = 30
@@ -42,20 +44,20 @@ async function apiSearchAvailableAreas(
   libraryId: LibraryId,
   startDatetime: Date,
   durationInMinutes: number,
+  areaId: AreaId | null = null,
 ): Promise<any> {
-  const response = await axios.get(
-    API_URL_SEARCH_AVAILABLE_AREAS,
-    {
-      headers: API_HEADERS,
-      params: {
-        Mode: "OffsiteMode",
-        BranchId: libraryId,
-        StartTime: toLocalISOString(startDatetime),
-        DurationInMinutes: durationInMinutes,
-      },
-    },
-  )
-  return response.data
+  const params = new URLSearchParams({
+    Mode: "OffsiteMode",
+    BranchId: libraryId.toString(),
+    AreaId: areaId !== null ? areaId.toString() : "",
+    StartTime: toLocalISOString(startDatetime),
+    DurationInMinutes: durationInMinutes.toString(),
+  })
+  const url =
+    API_URL_SEARCH_AVAILABLE_AREAS + "?" + params.toString()
+  const response = await fetch(url, { headers: API_HEADERS })
+  const data = await response.json()
+  return data
 }
 
 async function getLibraryInfo(): Promise<LibraryInfo> {
@@ -98,6 +100,7 @@ async function getLibraryInfo(): Promise<LibraryInfo> {
       openingTime: new Date(area["openingTime"]),
       closingTime: new Date(area["closingTime"]),
       seatInfo: parseSeatInfo(area["seats"]),
+      code: area["code"],
     }
   }
   function parseSeatInfo(seats: any[]): SeatInfo {
@@ -142,6 +145,81 @@ async function searchAvailableAreas(
       return [areaId, seatIds]
     }),
   )
+}
+
+async function getAreaMapUrl(
+  libraryId: LibraryId,
+  areaId: AreaId,
+  areaDetails: AreaDetails,
+): Promise<[string, string] | null> {
+  const today = new Date()
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const areaOpeningToday = new Date(areaDetails.openingTime)
+  const areaClosingToday = new Date(areaDetails.closingTime)
+  const areaOpeningTomorrow = new Date(areaDetails.openingTime)
+  setDate(areaOpeningToday, today)
+  setDate(areaClosingToday, today)
+  setDate(areaOpeningTomorrow, tomorrow)
+  const todayDatetime =
+    today.getTime() >= areaClosingToday.getTime()
+      ? null
+      : today.getTime() >= areaOpeningToday.getTime()
+        ? today
+        : areaOpeningToday
+  const tomorrowDatetime =
+    today.getHours() < 12 ? null : areaOpeningTomorrow
+  const query = async (
+    datetime: Date,
+  ): Promise<[string, string] | null> => {
+    const data = await apiSearchAvailableAreas(
+      libraryId,
+      datetime,
+      MIN_BOOKING_DURATION_IN_MINUTES,
+      areaId,
+    )
+    for (const area of data["areas"]) {
+      if (area["areaId"] != areaId) continue
+      return area["areaMapUrls"]
+    }
+    return null
+  }
+  return (
+    (todayDatetime && (await query(todayDatetime))) ||
+    (tomorrowDatetime && (await query(tomorrowDatetime)))
+  )
+}
+
+async function getLibraryAreasMapUrl(
+  libraryId: LibraryId,
+  areaInfo: AreaInfo,
+): Promise<Map<AreaId, [string, string] | null>> {
+  console.log(
+    "%s service.getLibraryAreasMapUrl(%d, ...)",
+    new Date().toLocaleString(),
+    libraryId,
+  )
+  return new Map(
+    await Promise.all<[AreaId, [string, string] | null]>(
+      areaInfo
+        .entries()
+        .map(
+          async ([areaId, areaDetails]): Promise<
+            [AreaId, [string, string] | null]
+          > => [
+            areaId,
+            await getAreaMapUrl(libraryId, areaId, areaDetails),
+          ],
+        ),
+    ),
+  )
+}
+
+function getAreaMapImageUrl(areaMapUrl: [string, string]) {
+  return [
+    AREA_MAP_IMAGE_URL + areaMapUrl[0],
+    AREA_MAP_IMAGE_URL + areaMapUrl[1],
+  ]
 }
 
 function getTimeslotIndex(
@@ -401,6 +479,15 @@ async function getLibraryAvailability(
 export {
   getLibraryInfo,
   getLibraryAvailability,
-  getNumberOfTimeslots,
   getTimeslots,
+  getLibraryAreasMapUrl,
+  getAreaMapImageUrl,
+}
+
+export {
+  apiGetAccountInfo,
+  apiSearchAvailableAreas,
+  getTimeslotIndex,
+  getNumberOfTimeslots,
+  getAreaMapUrl,
 }

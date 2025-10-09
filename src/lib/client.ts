@@ -1,7 +1,11 @@
 import * as server from "@/lib/server"
 import useSWR from "swr"
+import { LibraryId } from "./types"
 
-function useLibraryAvailability(libraryId: number, date: Date) {
+function useLibraryAvailability(
+  libraryId: LibraryId,
+  date: Date,
+) {
   const { data, error, isLoading } = useSWR(
     [libraryId, date],
     ([libraryId, date]) =>
@@ -14,4 +18,16 @@ function useLibraryAvailability(libraryId: number, date: Date) {
   }
 }
 
-export { useLibraryAvailability }
+function useLibraryAreasMapUrl(libraryId: LibraryId) {
+  const { data, error, isLoading } = useSWR(
+    [libraryId],
+    ([libraryId]) => server.getLibraryAreasMapUrl(libraryId),
+  )
+  return {
+    libraryAreasMapUrl: data,
+    isLoading,
+    isError: error,
+  }
+}
+
+export { useLibraryAvailability, useLibraryAreasMapUrl }

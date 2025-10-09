@@ -1,4 +1,5 @@
 import {
+  AreaId,
   LibraryAvailability,
   LibraryId,
   LibraryInfo,
@@ -103,9 +104,36 @@ function cacheLibraryAvailability(
   }
 }
 
+function cacheLibraryAreasMapUrl(
+  getLibraryAreasMapUrl: (
+    libraryId: LibraryId,
+  ) => Promise<Map<AreaId, [string, string] | null>>,
+  cacheDurationMs: number,
+): (
+  libraryId: LibraryId,
+) => Cached<Map<AreaId, [string, string] | null>> {
+  const cacheRefs: Map<
+    LibraryId,
+    CachedRef<Map<AreaId, [string, string] | null>>
+  > = new Map()
+  return (libraryId: LibraryId) => {
+    let cacheRef = cacheRefs.get(libraryId)
+    if (!cacheRef) {
+      cacheRef = new CachedRef()
+      cacheRefs.set(libraryId, cacheRef)
+    }
+    return new Cached(
+      cacheRef,
+      () => getLibraryAreasMapUrl(libraryId),
+      cacheDurationMs,
+    )
+  }
+}
+
 export {
   CachedRef,
   Cached,
   cacheLibraryInfo,
   cacheLibraryAvailability,
+  cacheLibraryAreasMapUrl,
 }

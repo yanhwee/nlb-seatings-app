@@ -2,6 +2,7 @@
 
 import * as service from "@/lib/service"
 import * as cache from "@/lib/cache"
+import { LibraryId } from "./types"
 
 const cacheLibraryInfo = cache.cacheLibraryInfo(
   () => service.getLibraryInfo(),
@@ -22,8 +23,29 @@ const cacheLibraryAvailability = cache.cacheLibraryAvailability(
   10 * 60 * 1000,
 )
 
-function getLibraryAvailability(libraryId: number, date: Date) {
+function getLibraryAvailability(
+  libraryId: LibraryId,
+  date: Date,
+) {
   return cacheLibraryAvailability(libraryId, date).strict()
 }
 
-export { getLibraryInfo, getLibraryAvailability }
+const cacheLibraryAreasMapUrl = cache.cacheLibraryAreasMapUrl(
+  async (libraryId) => {
+    const libraryInfo = await getLibraryInfo()
+    const libraryDetails = libraryInfo.get(libraryId)!
+    const areaInfo = libraryDetails.areaInfo
+    return service.getLibraryAreasMapUrl(libraryId, areaInfo)
+  },
+  10 * 60 * 1000,
+)
+
+function getLibraryAreasMapUrl(libraryId: LibraryId) {
+  return cacheLibraryAreasMapUrl(libraryId).strict()
+}
+
+export {
+  getLibraryInfo,
+  getLibraryAvailability,
+  getLibraryAreasMapUrl,
+}

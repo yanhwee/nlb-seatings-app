@@ -16,3 +16,29 @@
 .view-map-button-label {
   font-size: 12px;
 }
+
+.loading-error-div {
+  text-align: center;
+}
+
+.view-map-dialog {
+  z-index: 1;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0px;
+}
+
+.view-map-dialog-image {
+  min-height: 0;
+  object-fit: contain;
+}

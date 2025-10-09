@@ -6,11 +6,3 @@
   background-color: transparent;
   text-overflow: ellipsis;
 }
-
-.custom-select:focus {
-  outline: none;
-}
-
-.custom-select:focus-visible {
-  outline: auto;
-}
