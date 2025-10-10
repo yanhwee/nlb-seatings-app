@@ -28,7 +28,7 @@ function AreaAvailabilityTable({
         className={styles["table-viewer_"]}
         style={{
           overflowX:
-            tableWidthPercent <= 100 ? "visible" : "scroll",
+            tableWidthPercent <= 100 ? "hidden" : "scroll",
         }}
       >
         <table

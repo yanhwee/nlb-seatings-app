@@ -6,6 +6,10 @@ import {
 } from "@/lib/types"
 import { isToday, isTomorrow } from "@/lib/utils"
 
+const LIBRARY_INFO_CACHE_DURATION_MS = 10 * 60 * 1000
+const LIBRARY_AVAILABILITY_CACHE_DURATION_MS = 5 * 60 * 1000
+const LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS = 10 * 60 * 1000
+
 class CachedRef<T> {
   value: T | null = null
   timestamp: number = 0
@@ -136,4 +140,7 @@ export {
   cacheLibraryInfo,
   cacheLibraryAvailability,
   cacheLibraryAreasMapUrl,
+  LIBRARY_INFO_CACHE_DURATION_MS,
+  LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
+  LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,
 }

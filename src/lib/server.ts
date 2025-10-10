@@ -6,7 +6,7 @@ import { LibraryId } from "./types"
 
 const cacheLibraryInfo = cache.cacheLibraryInfo(
   () => service.getLibraryInfo(),
-  10 * 60 * 1000,
+  cache.LIBRARY_INFO_CACHE_DURATION_MS,
 )
 
 function getLibraryInfo() {
@@ -20,7 +20,7 @@ const cacheLibraryAvailability = cache.cacheLibraryAvailability(
       libraryId,
       date,
     ),
-  10 * 60 * 1000,
+  cache.LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
 )
 
 function getLibraryAvailability(
@@ -37,7 +37,7 @@ const cacheLibraryAreasMapUrl = cache.cacheLibraryAreasMapUrl(
     const areaInfo = libraryDetails.areaInfo
     return service.getLibraryAreasMapUrl(libraryId, areaInfo)
   },
-  10 * 60 * 1000,
+  cache.LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,
 )
 
 function getLibraryAreasMapUrl(libraryId: LibraryId) {

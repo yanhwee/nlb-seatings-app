@@ -15,13 +15,29 @@ interface ViewMapProps {
 function ViewMap({ libraryId, areaId }: ViewMapProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false)
 
-  const { libraryAreasMapUrl, isLoading, isError } =
+  const { libraryAreasMapUrl, error } =
     useLibraryAreasMapUrl(libraryId)
 
-  const areaMapUrl = libraryAreasMapUrl?.get(areaId)
-
-  const areaMapImageUrl =
-    areaMapUrl && getAreaMapImageUrl(areaMapUrl)
+  let images = null
+  if (libraryAreasMapUrl) {
+    const areaMapUrl = libraryAreasMapUrl.get(areaId)!
+    const areaMapImageUrl = getAreaMapImageUrl(areaMapUrl)
+    const [imageUrl1, imageUrl2] = areaMapImageUrl
+    images = (
+      <>
+        <img
+          className={styles["view-map-dialog-image"]}
+          src={imageUrl1}
+          alt="Area map image"
+        />
+        <img
+          className={styles["view-map-dialog-image"]}
+          src={imageUrl2}
+          alt="Area map image"
+        />
+      </>
+    )
+  }
 
   return (
     <>
@@ -41,27 +57,16 @@ function ViewMap({ libraryId, areaId }: ViewMapProps) {
             className={styles["view-map-dialog"]}
             onClick={() => setIsOpen(false)}
           >
-            {isLoading ? (
-              <div className={styles["loading-error-div"]}>
-                Loading...
-              </div>
-            ) : isError ? (
+            {error ? (
               <div className={styles["loading-error-div"]}>
                 Failed to fetch data
               </div>
+            ) : !images ? (
+              <div className={styles["loading-error-div"]}>
+                Loading...
+              </div>
             ) : (
-              <>
-                <img
-                  className={styles["view-map-dialog-image"]}
-                  src={areaMapImageUrl![0]}
-                  alt="Area map image 1"
-                />
-                <img
-                  className={styles["view-map-dialog-image"]}
-                  src={areaMapImageUrl![1]}
-                  alt="Area map image 2"
-                />
-              </>
+              images
             )}
           </div>,
           document.body,
