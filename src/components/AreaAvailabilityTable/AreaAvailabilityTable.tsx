@@ -24,70 +24,82 @@ function AreaAvailabilityTable({
 
   return (
     <div className={styles["table-viewer"]}>
-      <table
-        className={styles["table"]}
-        style={{ width: `${tableWidthPercent}%` }}
+      <div
+        className={styles["table-viewer_"]}
+        style={{
+          overflowX:
+            tableWidthPercent <= 100 ? "visible" : "scroll",
+        }}
       >
-        <thead>
-          <tr className={styles["top-header"]}>
-            <th className={styles["top-left-cell"]}></th>
-            {timeslots.map((timeslot, index) => (
-              <th
-                key={index}
-                className={styles["time-header-cell"]}
-              >
-                <div
-                  className={
-                    styles["time-header-cell-container"]
-                  }
+        <table
+          className={styles["table"]}
+          style={{
+            width: `${tableWidthPercent}%`,
+          }}
+        >
+          <thead>
+            <tr className={styles["top-header"]}>
+              <th className={styles["top-left-cell"]}></th>
+              {timeslots.map((timeslot, index) => (
+                <th
+                  key={index}
+                  className={styles["time-header-cell"]}
                 >
                   <div
-                    className={[
-                      styles["time-header-label"],
-                      styles[
-                        "time-header-label--" +
-                          (isFullHour(timeslot)
-                            ? "full-hour"
-                            : "quarter-hour")
-                      ],
-                    ].join(" ")}
+                    className={
+                      styles["time-header-cell-container"]
+                    }
                   >
-                    {format24HourTime(timeslot)}
+                    <div
+                      className={[
+                        styles["time-header-label"],
+                        styles[
+                          "time-header-label--" +
+                            (isFullHour(timeslot)
+                              ? "full-hour"
+                              : "quarter-hour")
+                        ],
+                      ].join(" ")}
+                    >
+                      {format24HourTime(timeslot)}
+                    </div>
                   </div>
-                </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from(areaAvailability.entries()).map(
-            ([seatId, seatAvailability]) => (
-              <tr key={seatId}>
-                <th className={styles["seat-header-cell"]}>
-                  {seatInfo.get(seatId)?.name}
                 </th>
-                {seatAvailability.map((isAvailable, index) => (
-                  <td
-                    key={index}
-                    className={[
-                      styles["cell"],
-                      styles[
-                        "cell--" +
-                          (isAvailable
-                            ? "available"
-                            : "reserved")
-                      ],
-                      isFullHour(timeslots[index])
-                        ? styles["cell--hour"]
-                        : "",
-                    ].join(" ")}
-                  ></td>
-                ))}
-              </tr>
-            ),
-          )}
-        </tbody>
-      </table>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from(areaAvailability.entries()).map(
+              ([seatId, seatAvailability]) => (
+                <tr key={seatId}>
+                  <th className={styles["seat-header-cell"]}>
+                    {seatInfo.get(seatId)?.name}
+                  </th>
+                  {seatAvailability.map(
+                    (isAvailable, index) => (
+                      <td
+                        key={index}
+                        className={[
+                          styles["cell"],
+                          styles[
+                            "cell--" +
+                              (isAvailable
+                                ? "available"
+                                : "reserved")
+                          ],
+                          isFullHour(timeslots[index])
+                            ? styles["cell--hour"]
+                            : "",
+                        ].join(" ")}
+                      ></td>
+                    ),
+                  )}
+                </tr>
+              ),
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
