@@ -57,6 +57,7 @@ async function apiSearchAvailableAreas(
     API_URL_SEARCH_AVAILABLE_AREAS + "?" + params.toString()
   const response = await fetch(url, { headers: API_HEADERS })
   const data = await response.json()
+  console.log(data)
   return data
 }
 
