@@ -20,8 +20,6 @@ function ViewMap({ libraryId, areaId }: ViewMapProps) {
   let images = null
   if (libraryAreasMapUrl) {
     const areaMapUrl = libraryAreasMapUrl.get(areaId)!
-    console.log(libraryAreasMapUrl)
-    console.log(areaId)
     const areaMapImageUrl = getAreaMapImageUrl(areaMapUrl)
     const [imageUrl1, imageUrl2] = areaMapImageUrl
     images = (

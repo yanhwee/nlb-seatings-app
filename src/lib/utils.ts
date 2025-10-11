@@ -387,9 +387,3 @@ export function toLocalIsoDateString(date: Date): string {
 
   return `${year}-${month}-${day}`
 }
-
-// Example usage
-const now = new Date()
-const dateKey = toLocalIsoDateString(now)
-
-console.log(dateKey) // e.g., "2025-10-11"

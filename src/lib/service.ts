@@ -100,7 +100,6 @@ async function getLibraryInfo(): Promise<LibraryInfo> {
       openingTime: new Date(area["openingTime"]),
       closingTime: new Date(area["closingTime"]),
       seatInfo: parseSeatInfo(area["seats"]),
-      code: area["code"],
     }
   }
   function parseSeatInfo(seats: any[]): SeatInfo {
@@ -135,6 +134,8 @@ async function searchAvailableAreas(
     startDatetime,
     durationInMinutes,
   )
+
+  if (!data["found"]) return new Map()
 
   return new Map(
     data["areas"].map((area: any) => {

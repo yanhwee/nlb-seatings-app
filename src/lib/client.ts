@@ -26,15 +26,9 @@ const libraryAvailabilityCoalesce =
 
 const getLibraryAvailabilityRefresh = makeCachedRefresh(
   getLibraryAvailabilityCache,
-  libraryAvailabilityCoalesce(async (libraryId, date) => [
-    new Date().getTime(),
-    (
-      await server.getTimestampLibraryAvailability(
-        libraryId,
-        date,
-      )
-    )[1],
-  ]),
+  libraryAvailabilityCoalesce(
+    server.getTimestampLibraryAvailability,
+  ),
 )
 
 const useLibraryAvailability = (

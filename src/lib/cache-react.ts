@@ -23,21 +23,19 @@ function useReactiveTimedRefresh<
   B extends A,
 >(
   getRefresh: (...args: Args) => TimedRefresh<A, B>,
-  args: Args,
-): A | null {
-  const [prevArgs, setPrevArgs] = useState<Args | null>(null)
-  const [data, setData] = useState<A | null>(null)
+  args: Args, // Args must be simple
+): A {
+  const [[duration, value], update] = getRefresh(...args)
+  const [data, setData] = useState<A>(value)
+  const [prevArgs, setPrevArgs] = useState<Args>(args)
   useEffect(() => {
-    console.log("%s Effect is getting called...", new Date())
-    const [[duration, value], update] = getRefresh(...args)
-    setData(value)
-    setPrevArgs(args)
     let ignore = false
     const callback = (duration: Duration) =>
       setTimeout(async () => {
         const [duration_, value_] = await update()
         if (ignore) return
         setData(value_)
+        setPrevArgs(args)
         timeoutId = callback(duration_)
       }, duration)
     let timeoutId = callback(duration)
@@ -45,10 +43,10 @@ function useReactiveTimedRefresh<
       ignore = true
       clearTimeout(timeoutId)
     }
-  }, args) // ideally getRefresh should be here...
-
-  if (prevArgs === null || !checkArgsSame(prevArgs, args))
-    return null
+  }, args)
+  // something feels wrong...
+  // what is the root of solving this?
+  if (!checkArgsSame(args, prevArgs)) return value
   return data
 }
 
