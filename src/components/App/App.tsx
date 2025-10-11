@@ -63,12 +63,12 @@ function App({ libraryInfo }: AppProps) {
 
   const [zoomLevel, setZoomLevel] = useState<number>(100)
 
-  const libraryAvailability = useLibraryAvailability(
-    libraryId,
-    date,
-  )
+  // const libraryAvailability = useLibraryAvailability(
+  //   libraryId,
+  //   date,
+  // )
 
-  const datedAreaAvailability = libraryAvailability?.get(areaId)
+  // const datedAreaAvailability = libraryAvailability?.get(areaId)
 
   return (
     <div id="app-container">
@@ -99,7 +99,7 @@ function App({ libraryInfo }: AppProps) {
           handleSelectZoomLevel={setZoomLevel}
         />
       </div>
-      {!datedAreaAvailability ? (
+      {/* {!datedAreaAvailability ? (
         <div className="center-div">Loading...</div>
       ) : (
         <AreaAvailabilityTable
@@ -107,7 +107,7 @@ function App({ libraryInfo }: AppProps) {
           datedAreaAvailability={datedAreaAvailability}
           zoomLevel={zoomLevel}
         />
-      )}
+      )} */}
     </div>
   )
 }

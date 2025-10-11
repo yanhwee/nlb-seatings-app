@@ -15,28 +15,28 @@ interface ViewMapProps {
 function ViewMap({ libraryId, areaId }: ViewMapProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false)
 
-  const libraryAreasMapUrl = useLibraryAreasMapUrl(libraryId)
+  // const libraryAreasMapUrl = useLibraryAreasMapUrl(libraryId)
 
-  let images = null
-  if (libraryAreasMapUrl) {
-    const areaMapUrl = libraryAreasMapUrl.get(areaId)!
-    const areaMapImageUrl = getAreaMapImageUrl(areaMapUrl)
-    const [imageUrl1, imageUrl2] = areaMapImageUrl
-    images = (
-      <>
-        <img
-          className={styles["view-map-dialog-image"]}
-          src={imageUrl1}
-          alt="Area map image"
-        />
-        <img
-          className={styles["view-map-dialog-image"]}
-          src={imageUrl2}
-          alt="Area map image"
-        />
-      </>
-    )
-  }
+  // let images = null
+  // if (libraryAreasMapUrl) {
+  //   const areaMapUrl = libraryAreasMapUrl.get(areaId)!
+  //   const areaMapImageUrl = getAreaMapImageUrl(areaMapUrl)
+  //   const [imageUrl1, imageUrl2] = areaMapImageUrl
+  //   images = (
+  //     <>
+  //       <img
+  //         className={styles["view-map-dialog-image"]}
+  //         src={imageUrl1}
+  //         alt="Area map image"
+  //       />
+  //       <img
+  //         className={styles["view-map-dialog-image"]}
+  //         src={imageUrl2}
+  //         alt="Area map image"
+  //       />
+  //     </>
+  //   )
+  // }
 
   return (
     <>
@@ -50,7 +50,7 @@ function ViewMap({ libraryId, areaId }: ViewMapProps) {
         </span>
       </button>
 
-      {isOpen &&
+      {/* {isOpen &&
         createPortal(
           <div
             className={styles["view-map-dialog"]}
@@ -65,7 +65,7 @@ function ViewMap({ libraryId, areaId }: ViewMapProps) {
             )}
           </div>,
           document.body,
-        )}
+        )} */}
     </>
   )
 }
