@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NLB Seatings App
+
+Shows seat availabilities for Singapore's NLB libraries.
+
+Designed as a web application with a mobile-first interface.
+
+Built with React & Next.js.
+
+Try it here:.
+
+## More Info
+
+This application gets seat availabilities information from the National Library Board (NLB) via their (unofficial) seat booking API. Data for a new booking day is released every day at 12 noon for the following day's availability.
 
 ## Getting Started
 
-First, run the development server:
+Follow these steps to setup the project locally.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**Prerequisites**:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- node.js (v24+)
+- npm
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Installation**:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Install dependencies: `npm install`
 
-## Learn More
+2. Run the development server: `npm run dev`.
 
-To learn more about Next.js, take a look at the following resources:
+The application will be accessible at `localhost:3000`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Technical Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- React, Next.js, TypeScript.
+- Styling: Vanilla HTML, CSS.
+- Database: None (Data accessed via server proxy).
+- Server: CORS proxy + data processing + caching
+- Server Caching: Lazy, with request coalescing.
+- Client Caching: Stale-While-Revalidate pattern (SWR).
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Demo
