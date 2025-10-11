@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { LibraryId, LibraryInfo } from "./types"
+import { LibraryId } from "./types"
 import { getOrCreate, toLocalIsoDateString } from "./utils"
 
 interface Store<K, V> {
