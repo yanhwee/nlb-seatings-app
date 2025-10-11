@@ -44,7 +44,7 @@ function App({ libraryInfo }: AppProps) {
 
   const [zoomLevel, setZoomLevel] = useState<number>(100)
 
-  const { libraryAvailability, error } = useLibraryAvailability(
+  const libraryAvailability = useLibraryAvailability(
     libraryId,
     date,
   )
@@ -52,11 +52,9 @@ function App({ libraryInfo }: AppProps) {
   const datedAreaAvailability = libraryAvailability?.get(areaId)
 
   function handleSelectLibraryId(libraryId: LibraryId) {
-    const libraryDetails = libraryInfo?.get(libraryId)
-    if (!libraryDetails) throw new Error()
+    const libraryDetails = libraryInfo.get(libraryId)!
     const areaInfo = libraryDetails.areaInfo
-    const areaId = areaInfo.keys().next().value
-    if (!areaId) throw new Error()
+    const areaId = areaInfo.keys().next().value!
     setLibraryId(libraryId)
     setAreaId(areaId)
   }
@@ -90,9 +88,7 @@ function App({ libraryInfo }: AppProps) {
           handleSelectZoomLevel={setZoomLevel}
         />
       </div>
-      {error ? (
-        <div className="center-div">Failed to fetch data</div>
-      ) : !datedAreaAvailability ? (
+      {!datedAreaAvailability ? (
         <div className="center-div">Loading...</div>
       ) : (
         <AreaAvailabilityTable

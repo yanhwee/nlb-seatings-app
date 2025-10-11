@@ -305,3 +305,91 @@ export const isTomorrow = (date: Date): boolean => {
     date.getFullYear() === tomorrow.getFullYear()
   )
 }
+
+/**
+ * Checks if the given date is yesterday.
+ *
+ * This function creates a date object for the day before the current date
+ * and compares the year, month, and calendar day of the input date against it.
+ *
+ * @param date The Date object to check.
+ * @returns true if the date is yesterday, false otherwise.
+ */
+export const isYesterday = (date: Date): boolean => {
+  // 1. Create a temporary date object representing yesterday.
+  const yesterday = new Date()
+
+  // 2. Adjust the date back one day. Date methods automatically handle
+  //    month and year rollovers (e.g., crossing into December 31st/January 1st).
+  yesterday.setDate(yesterday.getDate() - 1)
+
+  // 3. Compare year, month, and day components of the input date
+  //    against the calculated 'yesterday' date.
+  return (
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear()
+  )
+}
+
+/**
+ * Gets a value from a Map if it exists, otherwise creates a new value,
+ * sets it in the Map, and returns it.
+ *
+ * This function is a robust, generic utility for the "get or create" pattern,
+ * ensuring clean and readable map interactions.
+ *
+ * @template K The type of the keys in the Map.
+ * @template V The type of the values in the Map.
+ * @param {Map<K, V>} map The Map to operate on.
+ * @param {K} key The key to look up in the Map.
+ * @param {() => V} factory A function that creates and returns a new value.
+ * @returns {V} The existing or newly created value.
+ */
+export function getOrCreate<K, V>(
+  map: Map<K, V>,
+  key: K,
+  factory: () => V,
+): V {
+  const existingValue = map.get(key)
+  if (existingValue !== undefined) {
+    return existingValue
+  }
+
+  const newValue = factory()
+  map.set(key, newValue)
+  return newValue
+}
+
+/**
+ * Converts a Date object to a local date string in "YYYY-MM-DD" format.
+ *
+ * This function manually constructs the date string using local date components
+ * to avoid implicit UTC conversions. This is ideal for hashing or comparisons
+ * where only the local date, and not the time, is relevant.
+ *
+ * @param {Date} date The Date object to convert.
+ * @returns {string} The formatted local date string (e.g., "2025-10-11").
+ */
+export function toLocalIsoDateString(date: Date): string {
+  // Get the year component from the local time zone.
+  const year = date.getFullYear()
+
+  // getMonth() is zero-indexed (0-11), so add 1 for the correct month number,
+  // then pad with a leading zero if necessary.
+  const month = (date.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")
+
+  // getDate() returns the day of the month (1-31) for the local time zone,
+  // padded with a leading zero if necessary.
+  const day = date.getDate().toString().padStart(2, "0")
+
+  return `${year}-${month}-${day}`
+}
+
+// Example usage
+const now = new Date()
+const dateKey = toLocalIsoDateString(now)
+
+console.log(dateKey) // e.g., "2025-10-11"

@@ -1,51 +1,111 @@
 "use server"
 
+import {
+  LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,
+  LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
+  LIBRARY_INFO_CACHE_DURATION_MS,
+  makeCachedRefresh,
+  makeLibraryAreasMapUrlCache,
+  makeLibraryAvailabilityCache,
+  makeLibraryInfoCache,
+  resolveCachedRefreshStrict,
+  Timestamp,
+  timestampGetPromise,
+} from "./cache"
 import * as service from "@/lib/service"
-import * as cache from "@/lib/cache"
-import { LibraryId } from "./types"
+import {
+  AreaId,
+  LibraryAvailability,
+  LibraryId,
+  LibraryInfo,
+} from "./types"
+import {
+  makeLibraryAreasMapUrlCoalesce,
+  makeLibraryAvailiabilityCoalesce,
+  makeLibraryInfoCoalesce,
+} from "./coalesce"
 
-const cacheLibraryInfo = cache.cacheLibraryInfo(
-  () => service.getLibraryInfo(),
-  cache.LIBRARY_INFO_CACHE_DURATION_MS,
+/* Library Info */
+
+const getLibraryInfoCache = makeLibraryInfoCache()
+
+const getLibraryInfoRefresh = makeCachedRefresh(
+  getLibraryInfoCache,
+  timestampGetPromise(service.getLibraryInfo),
 )
 
-function getLibraryInfo() {
-  return cacheLibraryInfo().strict()
-}
+const libraryInfoCoalesce =
+  makeLibraryInfoCoalesce<Timestamp<LibraryInfo>>()
 
-const cacheLibraryAvailability = cache.cacheLibraryAvailability(
-  async (libraryId, date) =>
+const getTimestampLibraryInfo = libraryInfoCoalesce(() =>
+  resolveCachedRefreshStrict(
+    getLibraryInfoRefresh(),
+    LIBRARY_INFO_CACHE_DURATION_MS,
+  ),
+)
+
+const getLibraryInfo = async () =>
+  (await getTimestampLibraryInfo())[1]
+
+/* Library Availability */
+
+const getLibraryAvailabilityCache =
+  makeLibraryAvailabilityCache()
+
+const getLibraryAvailabilityRefresh = makeCachedRefresh(
+  getLibraryAvailabilityCache,
+  timestampGetPromise(async (libraryId, date) =>
     service.getLibraryAvailability(
       await getLibraryInfo(),
       libraryId,
       date,
     ),
-  cache.LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
+  ),
 )
 
-function getLibraryAvailability(
-  libraryId: LibraryId,
-  date: Date,
-) {
-  return cacheLibraryAvailability(libraryId, date).strict()
-}
+const libraryAvailabilityCoalesce =
+  makeLibraryAvailiabilityCoalesce<
+    Timestamp<LibraryAvailability>
+  >()
 
-const cacheLibraryAreasMapUrl = cache.cacheLibraryAreasMapUrl(
-  async (libraryId) => {
-    const libraryInfo = await getLibraryInfo()
-    const libraryDetails = libraryInfo.get(libraryId)!
-    const areaInfo = libraryDetails.areaInfo
-    return service.getLibraryAreasMapUrl(libraryId, areaInfo)
-  },
-  cache.LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,
+const getTimestampLibraryAvailability =
+  libraryAvailabilityCoalesce(
+    (libraryId: LibraryId, date: Date) =>
+      resolveCachedRefreshStrict(
+        getLibraryAvailabilityRefresh(libraryId, date),
+        LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
+      ),
+  )
+
+/* Library Areas Map Url */
+
+const getLibraryAreasMapUrlCache = makeLibraryAreasMapUrlCache()
+
+const getLibraryAreasMapUrlRefresh = makeCachedRefresh(
+  getLibraryAreasMapUrlCache,
+  timestampGetPromise(async (libraryId) =>
+    service.getLibraryAreasMapUrl(
+      libraryId,
+      (await getLibraryInfo()).get(libraryId)!.areaInfo,
+    ),
+  ),
 )
 
-function getLibraryAreasMapUrl(libraryId: LibraryId) {
-  return cacheLibraryAreasMapUrl(libraryId).strict()
-}
+const libraryAreasMapUrlCoalesce =
+  makeLibraryAreasMapUrlCoalesce<
+    Timestamp<Map<AreaId, [string, string] | null>>
+  >()
+
+const getTimestampLibraryAreasMapUrl =
+  libraryAreasMapUrlCoalesce((libraryId: LibraryId) =>
+    resolveCachedRefreshStrict(
+      getLibraryAreasMapUrlRefresh(libraryId),
+      LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,
+    ),
+  )
 
 export {
   getLibraryInfo,
-  getLibraryAvailability,
-  getLibraryAreasMapUrl,
+  getTimestampLibraryAvailability,
+  getTimestampLibraryAreasMapUrl,
 }

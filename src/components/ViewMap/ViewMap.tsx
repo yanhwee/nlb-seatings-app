@@ -15,12 +15,13 @@ interface ViewMapProps {
 function ViewMap({ libraryId, areaId }: ViewMapProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false)
 
-  const { libraryAreasMapUrl, error } =
-    useLibraryAreasMapUrl(libraryId)
+  const libraryAreasMapUrl = useLibraryAreasMapUrl(libraryId)
 
   let images = null
   if (libraryAreasMapUrl) {
     const areaMapUrl = libraryAreasMapUrl.get(areaId)!
+    console.log(libraryAreasMapUrl)
+    console.log(areaId)
     const areaMapImageUrl = getAreaMapImageUrl(areaMapUrl)
     const [imageUrl1, imageUrl2] = areaMapImageUrl
     images = (
@@ -57,11 +58,7 @@ function ViewMap({ libraryId, areaId }: ViewMapProps) {
             className={styles["view-map-dialog"]}
             onClick={() => setIsOpen(false)}
           >
-            {error ? (
-              <div className={styles["loading-error-div"]}>
-                Failed to fetch data
-              </div>
-            ) : !images ? (
+            {!images ? (
               <div className={styles["loading-error-div"]}>
                 Loading...
               </div>

@@ -1,145 +1,202 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   AreaId,
   LibraryAvailability,
   LibraryId,
   LibraryInfo,
-} from "@/lib/types"
-import { isToday, isTomorrow } from "@/lib/utils"
+} from "./types"
+import {
+  getOrCreate,
+  isToday,
+  isTomorrow,
+  isYesterday,
+} from "./utils"
 
 const LIBRARY_INFO_CACHE_DURATION_MS = 10 * 60 * 1000
 const LIBRARY_AVAILABILITY_CACHE_DURATION_MS = 5 * 60 * 1000
 const LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS = 10 * 60 * 1000
 
-class CachedRef<T> {
-  value: T | null = null
-  timestamp: number = 0
-  promise: Promise<T> | null = null
+/* Ref */
+
+class Ref<T> {
+  constructor(public value: T) {}
 }
 
-class Cached<T> {
-  constructor(
-    private ref: CachedRef<T>,
-    private fetcher: () => Promise<T>,
-    private cacheDurationMs: number,
-  ) {}
-  public data(): T | null {
-    return this.ref.value
-  }
-  public validate(): Promise<T> | null {
-    const ref = this.ref
-    if (ref.promise) return ref.promise
-    if (ref.value) {
-      const now = Date.now()
-      const elapsed = now - ref.timestamp
-      if (elapsed < this.cacheDurationMs) return null
-    }
-    ref.promise = this.fetcher().then((value) => {
+/* Time */
+
+type Duration = number // in ms
+type Time = Duration // since epoch
+type Timestamp<T> = [Time | Duration, T]
+
+/* Refresh */
+
+type Refresh<A, B extends A> = [A, () => Promise<B>]
+type CachedRefresh<T> = Refresh<
+  Timestamp<T> | null,
+  Timestamp<T>
+>
+type TimedRefresh<A, B extends A> = Refresh<
+  Timestamp<A>,
+  Timestamp<B>
+>
+
+/* Get Refresh */
+
+type GetRef<Args extends any[], T> = (...args: Args) => Ref<T>
+type GetPromise<Args extends any[], T> = (
+  ...args: Args
+) => Promise<T>
+type GetRefresh<Args extends any[], A, B extends A> = (
+  ...args: Args
+) => Refresh<A, B>
+
+/* Get Cached Refresh */
+
+type GetCache<Args extends any[], T> = GetRef<
+  Args,
+  Timestamp<T> | null
+>
+type GetValue<Args extends any[], T> = GetPromise<
+  Args,
+  Timestamp<T>
+>
+type GetCachedRefresh<Args extends any[], T> = GetRefresh<
+  Args,
+  Timestamp<T> | null,
+  Timestamp<T>
+>
+
+/* Make Refresh */
+
+function makeRefresh<Args extends any[], A, B extends A>(
+  getRef: GetRef<Args, A>,
+  getPromise: GetPromise<Args, B>,
+): GetRefresh<Args, A, B> {
+  return (...args: Args): Refresh<A, B> => {
+    const ref = getRef(...args)
+    const newValue = async () => {
+      const value = await getPromise(...args)
       ref.value = value
-      ref.timestamp = Date.now()
-      ref.promise = null
       return value
-    })
-    return ref.promise
-  }
-  public async lazy(): Promise<T> {
-    const data = this.data()
-    const validated = this.validate()
-    return data !== null ? data : validated!
-  }
-  public async strict(): Promise<T> {
-    const data = this.data()
-    const validated = this.validate()
-    return validated !== null ? validated : data!
+    }
+    return [ref.value, newValue]
   }
 }
 
-function cacheLibraryInfo(
-  getLibraryInfo: () => Promise<LibraryInfo>,
-  cacheDurationMs: number,
-): () => Cached<LibraryInfo> {
-  const libraryInfo = new CachedRef<LibraryInfo>()
-  return () =>
-    new Cached(libraryInfo, getLibraryInfo, cacheDurationMs)
+function makeCachedRefresh<Args extends any[], T>(
+  getCache: GetCache<Args, T>,
+  getValue: GetValue<Args, T>,
+): GetCachedRefresh<Args, T> {
+  return makeRefresh(getCache, getValue)
 }
 
-enum Day {
-  Today,
-  Tomorrow,
+/* Cache helper functions */
+
+function getWaitDuration(
+  cacheDurationMs: Duration,
+  timestamp: Time,
+) {
+  const now = new Date().getTime()
+  const elapsed = now - timestamp
+  const waitDuration = cacheDurationMs - elapsed
+  return waitDuration
 }
 
-function cacheLibraryAvailability(
-  getLibraryAvailability: (
-    libraryId: LibraryId,
-    date: Date,
-  ) => Promise<LibraryAvailability>,
-  cacheDurationMs: number,
-): (
-  libraryId: LibraryId,
-  date: Date,
-) => Cached<LibraryAvailability> {
-  const libraryAvailabilities: Record<
-    Day,
-    Map<LibraryId, CachedRef<LibraryAvailability>>
-  > = {
-    [Day.Today]: new Map(),
-    [Day.Tomorrow]: new Map(),
+/* Cache Refresh functions */
+
+function timestampGetPromise<Args extends any[], T>(
+  getPromise: GetPromise<Args, T>,
+): GetValue<Args, T> {
+  return async (...args: Args): Promise<Timestamp<T>> => {
+    const value = await getPromise(...args)
+    const timestamp = new Date().getTime()
+    return [timestamp, value]
   }
-  return (libraryId: LibraryId, date: Date) => {
-    const day = isToday(date)
-      ? Day.Today
+}
+
+async function resolveCachedRefreshStrict<T>(
+  refresh: CachedRefresh<T>,
+  cacheDurationMs: Duration,
+): Promise<Timestamp<T>> {
+  const [value, update] = refresh
+  if (value === null) return update()
+  const timestamp = value[0]
+  const isOutdated =
+    getWaitDuration(cacheDurationMs, timestamp) <= 0
+  if (!isOutdated) return value
+  return update()
+}
+
+/* Make Cache */
+
+function makeLibraryInfoCache(): GetCache<[], LibraryInfo> {
+  const libraryInfo = new Ref(null)
+  return () => libraryInfo
+}
+
+function makeLibraryAvailabilityCache(): GetCache<
+  [LibraryId, Date],
+  LibraryAvailability
+> {
+  let cacheDate = new Date()
+  let todayLibraryAvailabilities = new Map()
+  let tomorrowLibraryAvailabilities = new Map()
+  return (libraryId, date) => {
+    if (!isToday(cacheDate)) {
+      if (isYesterday(cacheDate)) {
+        todayLibraryAvailabilities =
+          tomorrowLibraryAvailabilities
+      } else {
+        todayLibraryAvailabilities = new Map()
+      }
+      tomorrowLibraryAvailabilities = new Map()
+      cacheDate = new Date()
+    }
+    const libraryAvailabilities = isToday(date)
+      ? todayLibraryAvailabilities
       : isTomorrow(date)
-        ? Day.Tomorrow
+        ? tomorrowLibraryAvailabilities
         : null
-    if (day === null) throw new Error()
-    let libraryAvailability =
-      libraryAvailabilities[day].get(libraryId)
-    if (!libraryAvailability) {
-      libraryAvailability = new CachedRef<LibraryAvailability>()
-      libraryAvailabilities[day].set(
-        libraryId,
-        libraryAvailability,
-      )
-    }
-    return new Cached(
-      libraryAvailability,
-      () => getLibraryAvailability(libraryId, date),
-      cacheDurationMs,
+    if (libraryAvailabilities === null) throw new Error()
+    return getOrCreate(
+      libraryAvailabilities,
+      libraryId,
+      () => new Ref(null),
     )
   }
 }
 
-function cacheLibraryAreasMapUrl(
-  getLibraryAreasMapUrl: (
-    libraryId: LibraryId,
-  ) => Promise<Map<AreaId, [string, string] | null>>,
-  cacheDurationMs: number,
-): (
-  libraryId: LibraryId,
-) => Cached<Map<AreaId, [string, string] | null>> {
-  const cacheRefs: Map<
-    LibraryId,
-    CachedRef<Map<AreaId, [string, string] | null>>
-  > = new Map()
-  return (libraryId: LibraryId) => {
-    let cacheRef = cacheRefs.get(libraryId)
-    if (!cacheRef) {
-      cacheRef = new CachedRef()
-      cacheRefs.set(libraryId, cacheRef)
-    }
-    return new Cached(
-      cacheRef,
-      () => getLibraryAreasMapUrl(libraryId),
-      cacheDurationMs,
+function makeLibraryAreasMapUrlCache(): GetCache<
+  [LibraryId],
+  Map<AreaId, [string, string]>
+> {
+  const libraryAreasMapUrl = new Map()
+  return (libraryId) =>
+    getOrCreate(
+      libraryAreasMapUrl,
+      libraryId,
+      () => new Ref(null),
     )
-  }
+}
+
+export type {
+  Duration,
+  Time,
+  Timestamp,
+  Refresh,
+  CachedRefresh,
+  TimedRefresh,
 }
 
 export {
-  CachedRef,
-  Cached,
-  cacheLibraryInfo,
-  cacheLibraryAvailability,
-  cacheLibraryAreasMapUrl,
+  Ref,
+  makeCachedRefresh,
+  getWaitDuration,
+  timestampGetPromise,
+  resolveCachedRefreshStrict,
+  makeLibraryInfoCache,
+  makeLibraryAvailabilityCache,
+  makeLibraryAreasMapUrlCache,
   LIBRARY_INFO_CACHE_DURATION_MS,
   LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
   LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,
