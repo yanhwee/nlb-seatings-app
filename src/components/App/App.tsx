@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import "./App.css"
 import * as utils from "@/lib/utils"
 import {
@@ -16,16 +16,35 @@ import ViewMap from "@/components/ViewMap/ViewMap"
 import AreaAvailabilityTableLegend from "@/components/AreaAvailabilityTableLegend/AreaAvailabilityTableLegend"
 import SelectZoom from "@/components/SelectZoom/SelectZoom"
 import { useLibraryAvailability } from "@/lib/client"
+import {
+  getLocalStorage,
+  setLocalStorage,
+} from "@/lib/localstorage"
 
 interface AppProps {
   libraryInfo: LibraryInfo
 }
 
 function App({ libraryInfo }: AppProps) {
-  const defaultLibraryId = 31 //libraryInfo.keys().next().value!
+  const defaultLibraryId =
+    getLocalStorage<LibraryId>("libraryId") ??
+    // libraryInfo.keys().next().value ??
+    31
 
   const [libraryId, setLibraryId] =
     useState<LibraryId>(defaultLibraryId)
+
+  const changeLibraryId = useCallback(
+    (libraryId: LibraryId) => {
+      const libraryDetails = libraryInfo.get(libraryId)!
+      const areaInfo = libraryDetails.areaInfo
+      const areaId = areaInfo.keys().next().value!
+      setLibraryId(libraryId)
+      setAreaId(areaId)
+      setLocalStorage("libraryId", libraryId)
+    },
+    [libraryInfo],
+  )
 
   const libraryDetails = libraryInfo.get(libraryId)!
   const areaInfo = libraryDetails.areaInfo
@@ -51,20 +70,12 @@ function App({ libraryInfo }: AppProps) {
 
   const datedAreaAvailability = libraryAvailability?.get(areaId)
 
-  function handleSelectLibraryId(libraryId: LibraryId) {
-    const libraryDetails = libraryInfo.get(libraryId)!
-    const areaInfo = libraryDetails.areaInfo
-    const areaId = areaInfo.keys().next().value!
-    setLibraryId(libraryId)
-    setAreaId(areaId)
-  }
-
   return (
     <div id="app-container">
       <SelectLibrary
         libraryInfo={libraryInfo}
         selectedLibraryId={libraryId}
-        handleSelectLibraryId={handleSelectLibraryId}
+        handleSelectLibraryId={changeLibraryId}
       />
       <div className="dashed-divider" />
       <SelectArea

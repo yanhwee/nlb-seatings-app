@@ -1,20 +1,13 @@
 import App from "@/components/App/App"
+import ClientRender from "@/components/ClientRender/ClientRender"
 import { getLibraryInfo } from "@/lib/server"
-import { SWRConfig } from "swr"
 
 export default async function Home() {
   const libraryInfo = await getLibraryInfo()
 
   return (
-    <SWRConfig
-      value={{
-        // revalidateIfStale: false,
-        // revalidateOnFocus: false,
-        // revalidateOnReconnect: false,
-        keepPreviousData: true,
-      }}
-    >
+    <ClientRender>
       <App libraryInfo={libraryInfo} />
-    </SWRConfig>
+    </ClientRender>
   )
 }
