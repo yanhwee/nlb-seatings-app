@@ -11,6 +11,7 @@
     "scratch": "tsx scratch.ts"
   },
   "dependencies": {
+    "luxon": "^3.7.2",
     "next": "^15.5.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/luxon": "^3.7.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

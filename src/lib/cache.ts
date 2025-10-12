@@ -1,16 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { diffLocalDays } from "./date-utils"
 import {
   AreaId,
   LibraryAvailability,
   LibraryId,
   LibraryInfo,
 } from "./types"
-import {
-  getOrCreate,
-  isToday,
-  isTomorrow,
-  isYesterday,
-} from "./utils"
+import { getOrCreate } from "./utils"
 
 const LIBRARY_INFO_CACHE_DURATION_MS = 10 * 60 * 1000
 const LIBRARY_AVAILABILITY_CACHE_DURATION_MS = 5 * 60 * 1000
@@ -142,8 +138,12 @@ function makeLibraryAvailabilityCache(): GetCache<
   let todayLibraryAvailabilities = new Map()
   let tomorrowLibraryAvailabilities = new Map()
   return (libraryId, date) => {
-    if (!isToday(cacheDate)) {
-      if (isYesterday(cacheDate)) {
+    const diffDays = diffLocalDays(date, cacheDate)
+    const isToday = diffDays === 0
+    const isTomorrow = diffDays === 1
+    const isYesterday = diffDays === -1
+    if (!isToday) {
+      if (isYesterday) {
         todayLibraryAvailabilities =
           tomorrowLibraryAvailabilities
       } else {
@@ -152,9 +152,9 @@ function makeLibraryAvailabilityCache(): GetCache<
       tomorrowLibraryAvailabilities = new Map()
       cacheDate = new Date()
     }
-    const libraryAvailabilities = isToday(date)
+    const libraryAvailabilities = isToday
       ? todayLibraryAvailabilities
-      : isTomorrow(date)
+      : isTomorrow
         ? tomorrowLibraryAvailabilities
         : null
     if (libraryAvailabilities === null) throw new Error()

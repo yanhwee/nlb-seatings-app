@@ -3,8 +3,8 @@ import type {
   AreaDetails,
   DatedAreaAvailability,
 } from "@/lib/types"
-import { format24HourTime, isFullHour } from "@/lib/utils"
 import styles from "./AreaAvailabilityTable.module.css"
+import { formatLocalDate, isFullHour } from "@/lib/date-utils"
 
 interface AreaAvailabilityTableProps {
   areaDetails: AreaDetails
@@ -61,7 +61,7 @@ function AreaAvailabilityTable({
                         ],
                       ].join(" ")}
                     >
-                      {format24HourTime(timeslot)}
+                      {formatLocalDate(timeslot, "HHmm")}
                     </div>
                   </div>
                 </th>

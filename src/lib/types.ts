@@ -12,8 +12,8 @@ type LibraryDetails = {
 }
 type AreaDetails = {
   name: string
-  openingTime: Date
-  closingTime: Date
+  openingTime: string // 24h format HHmm
+  closingTime: string
   seatInfo: SeatInfo
 }
 type SeatDetails = {

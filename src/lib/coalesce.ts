@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { formatLocalDate, setLocalHHmm } from "./date-utils"
 import { LibraryId } from "./types"
-import { getOrCreate, toLocalIsoDateString } from "./utils"
+import { getOrCreate } from "./utils"
 
 interface Store<K, V> {
   get: (k: K) => V | null
@@ -47,19 +48,19 @@ function makeLibraryAvailaibilityStore<V>(): Store<
   V
 > {
   const store = new Map<string, Map<LibraryId, V>>()
+  const formatDate = (date: Date) =>
+    formatLocalDate(setLocalHHmm(date, "0000"), "YYYY-MM-dd")
   return {
     get: ([libraryId, date]) =>
-      store.get(toLocalIsoDateString(date))?.get(libraryId) ??
-      null,
+      store.get(formatDate(date))?.get(libraryId) ?? null,
     set: ([libraryId, date], v) => {
-      getOrCreate(
-        store,
-        toLocalIsoDateString(date),
-        () => new Map(),
-      ).set(libraryId, v)
+      getOrCreate(store, formatDate(date), () => new Map()).set(
+        libraryId,
+        v,
+      )
     },
     del: ([libraryId, date]) => {
-      store.get(toLocalIsoDateString(date))?.delete(libraryId)
+      store.get(formatDate(date))?.delete(libraryId)
     },
   }
 }

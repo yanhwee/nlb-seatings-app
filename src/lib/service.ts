@@ -15,7 +15,17 @@ import type {
   SeatAvailability,
   DatedAreaAvailability,
 } from "@/lib/types.ts"
-import { setDate, toLocalISOString } from "@/lib/utils"
+import {
+  addDays,
+  diffLocalDays,
+  getLocalHours,
+  maxDate,
+  minDate,
+  parseLocalISOHHmm,
+  roundUpQuarterHour,
+  setLocalHHmm,
+  formatLocalDate,
+} from "./date-utils"
 
 const API_URL = "https://www.nlb.gov.sg/seatbooking/api"
 const API_URL_GET_ACCOUNT_INFO =
@@ -50,14 +60,16 @@ async function apiSearchAvailableAreas(
     Mode: "OffsiteMode",
     BranchId: libraryId.toString(),
     AreaId: areaId !== null ? areaId.toString() : "",
-    StartTime: toLocalISOString(startDatetime),
+    StartTime: formatLocalDate(
+      startDatetime,
+      "yyyy-MM-dd'T'HH:mm",
+    ),
     DurationInMinutes: durationInMinutes.toString(),
   })
   const url =
     API_URL_SEARCH_AVAILABLE_AREAS + "?" + params.toString()
   const response = await fetch(url, { headers: API_HEADERS })
   const data = await response.json()
-  console.log(data)
   return data
 }
 
@@ -98,8 +110,8 @@ async function getLibraryInfo(): Promise<LibraryInfo> {
   function parseAreaDetails(area: any): AreaDetails {
     return {
       name: area["name"],
-      openingTime: new Date(area["openingTime"]),
-      closingTime: new Date(area["closingTime"]),
+      openingTime: parseLocalISOHHmm(area["openingTime"]),
+      closingTime: parseLocalISOHHmm(area["closingTime"]),
       seatInfo: parseSeatInfo(area["seats"]),
     }
   }
@@ -154,42 +166,39 @@ async function getAreaMapUrl(
   areaId: AreaId,
   areaDetails: AreaDetails,
 ): Promise<[string, string] | null> {
-  const today = new Date()
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const areaOpeningToday = new Date(areaDetails.openingTime)
-  const areaClosingToday = new Date(areaDetails.closingTime)
-  const areaOpeningTomorrow = new Date(areaDetails.openingTime)
-  setDate(areaOpeningToday, today)
-  setDate(areaClosingToday, today)
-  setDate(areaOpeningTomorrow, tomorrow)
+  const openingTime = areaDetails.openingTime
+  const closingTime = areaDetails.closingTime
+  const now = new Date()
+  const today = setLocalHHmm(now, "0000")
+  const tomorrow = addDays(today, 1)
+  const todayOpening = setLocalHHmm(today, openingTime)
+  const todayClosing = setLocalHHmm(today, closingTime)
+  const tomorrowOpening = setLocalHHmm(tomorrow, openingTime)
   const todayDatetime =
-    today.getTime() >= areaClosingToday.getTime()
-      ? null
-      : today.getTime() >= areaOpeningToday.getTime()
-        ? today
-        : areaOpeningToday
+    todayClosing <= now ? null : maxDate(todayOpening, now)
   const tomorrowDatetime =
-    today.getHours() < 12 ? null : areaOpeningTomorrow
-  const query = async (
+    getLocalHours(now) < 12 ? null : tomorrowOpening
+
+  async function query(
     datetime: Date,
-  ): Promise<[string, string] | null> => {
+  ): Promise<[string, string] | null> {
     const data = await apiSearchAvailableAreas(
       libraryId,
       datetime,
       MIN_BOOKING_DURATION_IN_MINUTES,
       areaId,
     )
-    for (const area of data["areas"]) {
-      if (area["areaId"] != areaId) continue
-      return area["areaMapUrls"]
-    }
-    return null
+    const areas: any[] = data["areas"]
+    const area: any = areas
+      .values()
+      .filter((a) => a["areaId"] == areaId)
+      .next().value
+    return area && area["areaMapUrls"]
   }
-  return (
+  const data =
     (todayDatetime && (await query(todayDatetime))) ||
     (tomorrowDatetime && (await query(tomorrowDatetime)))
-  )
+  return data
 }
 
 async function getLibraryAreasMapUrl(
@@ -276,63 +285,33 @@ async function getLibraryAvailability(
     date.toLocaleString(),
   )
 
-  date.setHours(0, 0, 0, 0)
-
-  function checkDate() {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date()
-    tomorrow.setHours(0, 0, 0, 0)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    return (
-      today.getTime() <= date.getTime() &&
-      date.getTime() <= tomorrow.getTime()
-    )
-  }
-
-  if (!checkDate()) throw new Error()
+  const now = new Date()
+  const daysDiff = diffLocalDays(date, now)
+  if (!(0 <= daysDiff && daysDiff <= 1)) throw new Error()
 
   const libraryDetails = libraryInfo.get(libraryId)
+  // TODO: remove all ! throw new Error()
   if (!libraryDetails) throw new Error()
   const areaInfo = libraryDetails.areaInfo
 
   function getEndDatetime(): Date {
-    const closingTimes = Array.from(areaInfo.values()).map(
-      (areaDetails) => areaDetails.closingTime,
-    )
-    const maxClosingTime = new Date(
-      Math.max(...closingTimes.map((t) => t.getTime())),
-    )
-    const endDatetime = new Date(maxClosingTime)
-    setDate(endDatetime, date)
-    return endDatetime
+    const closingDatetimes = areaInfo
+      .values()
+      .map((a) => setLocalHHmm(date, a.closingTime))
+    return maxDate(...closingDatetimes)
   }
 
   const endDatetime = getEndDatetime()
 
-  function getRoundedQuarterHour(): Date {
-    const now = new Date()
-    const minutesToAdd =
-      BOOKING_TIMESLOT_IN_MINUTES -
-      (now.getMinutes() % BOOKING_TIMESLOT_IN_MINUTES)
-    now.setMinutes(now.getMinutes() + minutesToAdd, 0, 0)
-    return now
-  }
   function getStartDatetime(): Date {
-    const openingTimes = Array.from(areaInfo.values()).map(
-      (areaDetails) => areaDetails.openingTime,
-    )
-    const minOpeningTime = new Date(
-      Math.min(...openingTimes.map((t) => t.getTime())),
-    )
-    const startDatetime = new Date(minOpeningTime)
-    setDate(startDatetime, date)
-    const quarterHour = getRoundedQuarterHour()
-    if (quarterHour.getTime() > endDatetime.getTime())
-      return endDatetime
-    if (quarterHour.getTime() > startDatetime.getTime())
-      return quarterHour
-    return startDatetime
+    const openingDatetimes = areaInfo
+      .values()
+      .map((a) => setLocalHHmm(date, a.openingTime))
+    const startDatetime = minDate(...openingDatetimes)
+    const quarterNow = roundUpQuarterHour(now)
+    const clip = (a: Date, b: Date, c: Date) =>
+      maxDate(a, minDate(b, c))
+    return clip(startDatetime, quarterNow, endDatetime)
   }
 
   const startDatetime = getStartDatetime()
@@ -355,25 +334,22 @@ async function getLibraryAvailability(
   function initDatedAreaAvailability(
     areaDetails: AreaDetails,
   ): DatedAreaAvailability {
-    const areaOpeningDatetime = new Date(
-      areaDetails.openingTime,
+    const openingTime = areaDetails.openingTime
+    const closingTime = areaDetails.closingTime
+    const openingDatetime = setLocalHHmm(date, openingTime)
+    const closingDatetime = setLocalHHmm(date, closingTime)
+    const areaStartDatetime = maxDate(
+      openingDatetime,
+      startDatetime,
     )
-    const areaClosingDatetime = new Date(
-      areaDetails.closingTime,
-    )
-    setDate(areaOpeningDatetime, date)
-    setDate(areaClosingDatetime, date)
-    const areaStartDatetime =
-      startDatetime > areaOpeningDatetime
-        ? startDatetime
-        : areaOpeningDatetime
+    const areaEndDatetime = closingDatetime
     const numberOfTimeslots = getNumberOfTimeslots(
       areaStartDatetime,
-      areaClosingDatetime,
+      areaEndDatetime,
     )
     return {
       startDatetime: areaStartDatetime,
-      endDatetime: areaClosingDatetime,
+      endDatetime: areaEndDatetime,
       areaAvailability: initAreaAvailability(
         areaDetails.seatInfo.keys(),
         numberOfTimeslots,

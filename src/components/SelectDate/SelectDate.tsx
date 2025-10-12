@@ -1,27 +1,27 @@
 import { FiCalendar } from "react-icons/fi"
-import { isSameDay, formatDate, setDate } from "@/lib/utils"
 import styles from "./SelectDate.module.css"
 import FormGroup from "../FormGroup/FormGroup"
-import { AreaDetails } from "@/lib/types"
+import { formatLocalDate } from "@/lib/date-utils"
 
 interface SelectDateProps {
-  selectedDate: Date
-  handleSelectDate: (date: Date) => void
-  currentDatetime: Date
-  areaDetails: AreaDetails
+  today: Date
+  tomorrow: Date
+  isTodaySelected: boolean
+  isTodayDisabled: boolean
+  isTomorrowDisabled: boolean
+  handleSelectIsTodaySelected: (b: boolean) => void
 }
 
 function SelectDate({
-  selectedDate,
-  handleSelectDate,
-  currentDatetime,
-  areaDetails,
+  today,
+  tomorrow,
+  isTodaySelected,
+  isTodayDisabled,
+  isTomorrowDisabled,
+  handleSelectIsTodaySelected,
 }: SelectDateProps) {
-  const today = new Date(currentDatetime)
-  const tomorrow = new Date(currentDatetime)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const areaClosingDatetime = new Date(areaDetails.closingTime)
-  setDate(areaClosingDatetime, currentDatetime)
+  const formatDate = (date: Date) =>
+    formatLocalDate(date, "dd MMM")
   return (
     <FormGroup icon={FiCalendar}>
       <fieldset className={styles["custom-radio-fieldset"]}>
@@ -29,9 +29,9 @@ function SelectDate({
           <input
             className={styles["custom-radio-button"]}
             type="radio"
-            checked={isSameDay(selectedDate, today)}
-            onChange={() => handleSelectDate(today)}
-            disabled={currentDatetime > areaClosingDatetime}
+            checked={isTodaySelected}
+            onChange={() => handleSelectIsTodaySelected(true)}
+            disabled={isTodayDisabled}
           />
           {`Today (${formatDate(today)})`}
         </label>
@@ -39,9 +39,9 @@ function SelectDate({
           <input
             className={styles["custom-radio-button"]}
             type="radio"
-            checked={isSameDay(selectedDate, tomorrow)}
-            onChange={() => handleSelectDate(tomorrow)}
-            disabled={currentDatetime.getHours() < 12}
+            checked={!isTodaySelected}
+            onChange={() => handleSelectIsTodaySelected(false)}
+            disabled={isTomorrowDisabled}
           />
           {`Tomorrow (${formatDate(tomorrow)})`}
         </label>
