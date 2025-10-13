@@ -68,4 +68,4 @@ function useImpure<T>(impure: T): [T, () => void] {
 }
 ```
 
-Much thanks for the inspiration of this project idea!
+Much thanks for those who inspired this project idea!
