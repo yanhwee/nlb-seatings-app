@@ -15,7 +15,10 @@ import ViewMap from "@/components/ViewMap/ViewMap"
 import AreaAvailabilityTableLegend from "@/components/AreaAvailabilityTableLegend/AreaAvailabilityTableLegend"
 import SelectZoom from "@/components/SelectZoom/SelectZoom"
 import { useLibraryAvailability } from "@/lib/client"
-import { setLocalStorage } from "@/lib/localstorage"
+import {
+  getLocalStorage,
+  setLocalStorage,
+} from "@/lib/localstorage"
 import {
   addDays,
   getLocalHours,
@@ -68,7 +71,9 @@ function App({ libraryInfo }: AppProps) {
 
   /* States */
   const [libraryId, setLibraryId] = useState<LibraryId>(
-    () => 31,
+    () =>
+      getLocalStorage("libraryId") ??
+      libraryInfo.keys().next().value!,
   )
   const [areaId, setAreaId] = useState<AreaId>(
     () => getLibraryDetails(libraryId).defaultAreaId,
