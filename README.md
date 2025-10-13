@@ -6,6 +6,8 @@ Built with React & Next.js.
 
 Try it here: [nlb-seatings-app.vercel.app](https://nlb-seatings-app.vercel.app/)!
 
+<img src="docs/demo.png" width="360px">
+
 ## More Info
 
 This application gets seat availabilities information from the National Library Board (NLB) via their (unofficial) seat booking API. Data for a new booking day is released every day at 12 noon for the following day's availability.
