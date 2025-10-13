@@ -63,14 +63,38 @@ export function getLocalHours(date: Date): number {
     .hour
 }
 
-/* Date helpers */
+export function getLocalDaysSinceEpoch(date: Date): number {
+  const epochUtc = DateTime.fromMillis(0, { zone: "utc" })
+  const epochSG = epochUtc.setZone(SG_TZ_IDENTIFIER)
+  const dt = DateTime.fromJSDate(date)
+  const dtSG = dt.setZone(SG_TZ_IDENTIFIER)
+  const startOfEpoch = epochSG.startOf("day")
+  const startOfDt = dtSG.startOf("day")
+  const diff = startOfDt.diff(startOfEpoch, "days")
+  return diff.days
+}
+
+export function isFullHour(date: Date) {
+  const dt = DateTime.fromJSDate(date).setZone(SG_TZ_IDENTIFIER)
+  return (
+    dt.minute === 0 && dt.second === 0 && dt.millisecond === 0
+  )
+}
 
 export function roundUpQuarterHour(date: Date): Date {
-  const newDate = new Date(date)
-  const minutesToAdd = 15 - (date.getMinutes() % 15)
-  newDate.setMinutes(newDate.getMinutes() + minutesToAdd)
-  return newDate
+  const dt = DateTime.fromJSDate(date).setZone(SG_TZ_IDENTIFIER)
+  const mins = dt.minute
+  const minsToAdd = mins % 15 > 0 ? 15 - (mins % 15) : 0
+  const roundedMins = mins + minsToAdd
+  const roundedDt = dt.set({
+    minute: roundedMins,
+    second: 0,
+    millisecond: 0,
+  })
+  return roundedDt.toJSDate()
 }
+
+/* Date helpers */
 
 export function maxDate(...dates: Date[]): Date {
   return new Date(Math.max(...dates.map((d) => d.getTime())))
@@ -84,12 +108,4 @@ export function addDays(date: Date, days: number): Date {
   const newDate = new Date(date)
   newDate.setDate(newDate.getDate() + days)
   return newDate
-}
-
-export function isFullHour(date: Date) {
-  return (
-    date.getMinutes() === 0 &&
-    date.getSeconds() === 0 &&
-    date.getMilliseconds() === 0
-  )
 }

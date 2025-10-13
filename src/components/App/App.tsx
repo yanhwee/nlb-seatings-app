@@ -1,8 +1,7 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useState } from "react"
 import "./App.css"
-import * as utils from "@/lib/utils"
 import {
   type AreaId,
   type LibraryId,
@@ -16,10 +15,7 @@ import ViewMap from "@/components/ViewMap/ViewMap"
 import AreaAvailabilityTableLegend from "@/components/AreaAvailabilityTableLegend/AreaAvailabilityTableLegend"
 import SelectZoom from "@/components/SelectZoom/SelectZoom"
 import { useLibraryAvailability } from "@/lib/client"
-import {
-  getLocalStorage,
-  setLocalStorage,
-} from "@/lib/localstorage"
+import { setLocalStorage } from "@/lib/localstorage"
 import {
   addDays,
   getLocalHours,

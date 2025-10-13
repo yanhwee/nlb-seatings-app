@@ -1,108 +1,33 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { diffLocalDays } from "./date-utils"
 import {
-  AreaId,
-  LibraryAvailability,
-  LibraryId,
-  LibraryInfo,
-} from "./types"
-import { getOrCreate } from "./utils"
+  makeGetLibraryAreasMapUrlStore,
+  makeGetLibraryAvailabilityStore,
+  makeGetLibraryInfoStore,
+} from "./store"
+import { LibraryId } from "./types"
 
 const LIBRARY_INFO_CACHE_DURATION_MS = 10 * 60 * 1000
 const LIBRARY_AVAILABILITY_CACHE_DURATION_MS = 5 * 60 * 1000
 const LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS = 10 * 60 * 1000
 
-/* Ref */
-
-class Ref<T> {
-  constructor(public value: T) {}
-}
-
-/* Time */
-
 type Duration = number // in ms
 type Time = Duration // since epoch
 type Timestamp<T> = [Time | Duration, T]
 
-/* Refresh */
-
-type Refresh<A, B extends A> = [A, () => Promise<B>]
-type CachedRefresh<T> = Refresh<
-  Timestamp<T> | null,
-  Timestamp<T>
->
-type TimedRefresh<A, B extends A> = Refresh<
-  Timestamp<A>,
-  Timestamp<B>
->
-
-/* Get Refresh */
-
-type GetRef<Args extends any[], T> = (...args: Args) => Ref<T>
-type GetPromise<Args extends any[], T> = (
-  ...args: Args
-) => Promise<T>
-type GetRefresh<Args extends any[], A, B extends A> = (
-  ...args: Args
-) => Refresh<A, B>
-
-/* Get Cached Refresh */
-
-type GetCache<Args extends any[], T> = GetRef<
-  Args,
-  Timestamp<T> | null
->
-type GetValue<Args extends any[], T> = GetPromise<
-  Args,
-  Timestamp<T>
->
-type GetCachedRefresh<Args extends any[], T> = GetRefresh<
-  Args,
-  Timestamp<T> | null,
-  Timestamp<T>
->
-
-/* Make Refresh */
-
-function makeRefresh<Args extends any[], A, B extends A>(
-  getRef: GetRef<Args, A>,
-  getPromise: GetPromise<Args, B>,
-): GetRefresh<Args, A, B> {
-  return (...args: Args): Refresh<A, B> => {
-    const ref = getRef(...args)
-    const newValue = async () => {
-      const value = await getPromise(...args)
-      ref.value = value
-      return value
-    }
-    return [ref.value, newValue]
-  }
+interface Cached<K, V> {
+  get: (k: K) => V | null
+  set: (k: K, v: V) => void
 }
 
-function makeCachedRefresh<Args extends any[], T>(
-  getCache: GetCache<Args, T>,
-  getValue: GetValue<Args, T>,
-): GetCachedRefresh<Args, T> {
-  return makeRefresh(getCache, getValue)
+interface CachedFn<K, V> {
+  cache: (k: K) => V | null
+  update: (k: K) => Promise<V>
 }
 
-/* Cache helper functions */
+type TimedCachedFn<K, V> = CachedFn<K, Timestamp<V>>
 
-function getWaitDuration(
-  cacheDurationMs: Duration,
-  timestamp: Time,
-) {
-  const now = new Date().getTime()
-  const elapsed = now - timestamp
-  const waitDuration = cacheDurationMs - elapsed
-  return waitDuration
-}
-
-/* Cache Refresh functions */
-
-function timestampGetPromise<Args extends any[], T>(
-  getPromise: GetPromise<Args, T>,
-): GetValue<Args, T> {
+function timestampGetPromise<Args extends unknown[], T>(
+  getPromise: (...args: Args) => Promise<T>,
+): (...args: Args) => Promise<Timestamp<T>> {
   return async (...args: Args): Promise<Timestamp<T>> => {
     const value = await getPromise(...args)
     const timestamp = new Date().getTime()
@@ -110,93 +35,93 @@ function timestampGetPromise<Args extends any[], T>(
   }
 }
 
-async function resolveCachedRefreshStrict<T>(
-  refresh: CachedRefresh<T>,
+function getWaitDuration(
+  now: Time,
+  timestamp: Time,
+  cacheDurationMs: Time,
+) {
+  const elapsed = now - timestamp
+  const duration = cacheDurationMs - elapsed
+  return duration
+}
+
+async function resolveTimedCachedFnStrict<K, V>(
+  cachedFn: TimedCachedFn<K, V>,
+  args: K,
   cacheDurationMs: Duration,
-): Promise<Timestamp<T>> {
-  const [value, update] = refresh
-  if (value === null) return update()
-  const timestamp = value[0]
-  const isOutdated =
-    getWaitDuration(cacheDurationMs, timestamp) <= 0
-  if (!isOutdated) return value
-  return update()
+): Promise<Timestamp<V>> {
+  const cache = cachedFn.cache(args)
+  if (cache === null) return cachedFn.update(args)
+  const timestamp = cache[0]
+  const now = new Date().getTime()
+  const duration = getWaitDuration(
+    now,
+    timestamp,
+    cacheDurationMs,
+  )
+  const isOutdated = duration <= 0
+  if (isOutdated) return cachedFn.update(args)
+  return cache
 }
 
-/* Make Cache */
-
-function makeLibraryInfoCache(): GetCache<[], LibraryInfo> {
-  const libraryInfo = new Ref(null)
-  return () => libraryInfo
-}
-
-function makeLibraryAvailabilityCache(): GetCache<
-  [LibraryId, Date],
-  LibraryAvailability
-> {
-  let cacheDate = new Date()
-  let todayLibraryAvailabilities = new Map()
-  let tomorrowLibraryAvailabilities = new Map()
-  return (libraryId, date) => {
-    const diffDays = diffLocalDays(date, cacheDate)
-    const isToday = diffDays === 0
-    const isTomorrow = diffDays === 1
-    const isYesterday = diffDays === -1
-    if (!isToday) {
-      if (isYesterday) {
-        todayLibraryAvailabilities =
-          tomorrowLibraryAvailabilities
-      } else {
-        todayLibraryAvailabilities = new Map()
-      }
-      tomorrowLibraryAvailabilities = new Map()
-      cacheDate = new Date()
-    }
-    const libraryAvailabilities = isToday
-      ? todayLibraryAvailabilities
-      : isTomorrow
-        ? tomorrowLibraryAvailabilities
-        : null
-    if (libraryAvailabilities === null) throw new Error()
-    return getOrCreate(
-      libraryAvailabilities,
-      libraryId,
-      () => new Ref(null),
-    )
+function makeCachedFn<K, V>(
+  makeCache: () => Cached<K, V>,
+  fn: (k: K) => Promise<V>,
+): CachedFn<K, V> {
+  const cache = makeCache()
+  return {
+    cache: cache.get,
+    update: async (k: K) => {
+      const v = await fn(k)
+      cache.set(k, v)
+      return v
+    },
   }
 }
 
-function makeLibraryAreasMapUrlCache(): GetCache<
-  [LibraryId],
-  Map<AreaId, [string, string]>
-> {
-  const libraryAreasMapUrl = new Map()
-  return (libraryId) =>
-    getOrCreate(
-      libraryAreasMapUrl,
-      libraryId,
-      () => new Ref(null),
-    )
+function makeLibraryInfoTimedCachedFn<V>(
+  fn: () => Promise<Timestamp<V>>,
+): TimedCachedFn<[], V> {
+  return makeCachedFn(makeGetLibraryInfoStore<Timestamp<V>>, fn)
+}
+
+function makeLibraryAvailabilityTimedCachedFn<V>(
+  fn: (
+    libraryId: LibraryId,
+    date: Date,
+  ) => Promise<Timestamp<V>>,
+): TimedCachedFn<[LibraryId, Date], V> {
+  return makeCachedFn(
+    makeGetLibraryAvailabilityStore<Timestamp<V>>,
+    ([libraryId, date]) => fn(libraryId, date),
+  )
+}
+
+function makeLibraryAreasMapUrlTimedCachedFn<V>(
+  fn: (libraryId: LibraryId) => Promise<Timestamp<V>>,
+): TimedCachedFn<[LibraryId], V> {
+  return makeCachedFn(
+    makeGetLibraryAreasMapUrlStore<Timestamp<V>>,
+    ([libraryId]) => fn(libraryId),
+  )
 }
 
 export type {
   Duration,
   Time,
   Timestamp,
-  Refresh,
-  CachedRefresh,
-  TimedRefresh,
+  Cached,
+  CachedFn,
+  TimedCachedFn,
 }
 
 export {
-  Ref,
-  makeCachedRefresh,
-  getWaitDuration,
+  makeLibraryAreasMapUrlTimedCachedFn,
+  makeLibraryAvailabilityTimedCachedFn,
+  makeLibraryInfoTimedCachedFn,
   timestampGetPromise,
-  resolveCachedRefreshStrict,
-  makeLibraryInfoCache,
-  makeLibraryAvailabilityCache,
-  makeLibraryAreasMapUrlCache,
+  resolveTimedCachedFnStrict,
+  getWaitDuration,
   LIBRARY_INFO_CACHE_DURATION_MS,
   LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
   LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,

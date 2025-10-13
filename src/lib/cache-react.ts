@@ -1,92 +1,74 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
-  TimedRefresh,
   Duration,
-  CachedRefresh,
-  Timestamp,
   getWaitDuration,
+  TimedCachedFn,
+  Timestamp,
 } from "./cache"
 
-function checkArgsSame(args1: any[], args2: any[]) {
-  if (args1 === args2) return true
-  if (args1.length !== args2.length) return false
-  for (let i = 0; i < args1.length; i++)
-    if (args1[i] != args2[i]) return false
-  return true
+function useImpure<T>(impure: T): [T, () => void] {
+  const [[get], set] = useState<[[T]]>([[impure]])
+  const refresh = useCallback(() => set([get]), [get])
+  get[0] = impure
+  return [impure, refresh]
 }
 
-function useReactiveTimedRefresh<
-  Args extends any[],
-  A,
-  B extends A,
->(
-  getRefresh: (...args: Args) => TimedRefresh<A, B>,
-  args: Args, // Args must be simple
-): A {
-  const [[duration, value], update] = getRefresh(...args)
-  const [data, setData] = useState<A>(value)
-  const [prevArgs, setPrevArgs] = useState<Args>(args)
+function resolveCacheValue<T>(
+  cache: Timestamp<T> | null,
+  cacheDurationMs: Duration,
+): [Duration, T | null] {
+  if (!cache) return [0, null]
+  const [timestamp, value] = cache
+  const now = new Date().getTime()
+  const waitDuration = getWaitDuration(
+    now,
+    timestamp,
+    cacheDurationMs,
+  )
+  const isOutdated = waitDuration <= 0
+  if (isOutdated) return [0, null]
+  return [waitDuration, value]
+}
+
+function useTimedCachedFn<Args extends unknown[], V>(
+  fn: TimedCachedFn<Args, V>,
+  args: Args,
+  cacheDurationMs: Duration,
+): V | null {
+  // think it could be improved but...
+  // this will be it for now...
+  const [{ cache, update }, refresh] = useImpure(fn)
+  const value = resolveCacheValue(
+    cache(args),
+    cacheDurationMs,
+  )[1]
+  console.log("refresh %s", new Date())
   useEffect(() => {
+    const duration = resolveCacheValue(
+      cache(args),
+      cacheDurationMs,
+    )[0]
+    console.log("effect %s", duration)
     let ignore = false
     const callback = (duration: Duration) =>
       setTimeout(async () => {
-        const [duration_, value_] = await update()
+        const cacheValue = await update(args)
         if (ignore) return
-        setData(value_)
-        setPrevArgs(args)
-        timeoutId = callback(duration_)
+        refresh()
+        const duration = resolveCacheValue(
+          cacheValue,
+          cacheDurationMs,
+        )[0]
+        timeoutId = callback(duration)
       }, duration)
     let timeoutId = callback(duration)
     return () => {
-      ignore = true
       clearTimeout(timeoutId)
+      ignore = true
     }
-  }, args)
-  // something feels wrong...
-  // what is the root of solving this?
-  if (!checkArgsSame(args, prevArgs)) return value
-  return data
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...args, cacheDurationMs, refresh, cache, update])
+  return value
 }
 
-function convertCachedToTimedRefresh<T>(
-  cacheDurationMs: Duration,
-  refresh: CachedRefresh<T>,
-): TimedRefresh<T | null, T> {
-  const [initial, update] = refresh
-  const newUpdate = async (): Promise<Timestamp<T>> => {
-    const [timestamp, value] = await update()
-    const waitDuration = getWaitDuration(
-      cacheDurationMs,
-      timestamp,
-    )
-    return [waitDuration, value]
-  }
-  if (initial === null) return [[0, null], newUpdate]
-  const [timestamp, value] = initial
-  const waitDuration = getWaitDuration(
-    cacheDurationMs,
-    timestamp,
-  )
-  const isOutdated = waitDuration <= 0
-  const value_ = isOutdated ? null : value
-  return [[waitDuration, value_], newUpdate]
-}
-
-function useReactiveCachedRefresh<Args extends any[], T>(
-  getRefresh: (...args: Args) => CachedRefresh<T>,
-  args: Args,
-  cacheDurationMs: Duration,
-) {
-  return useReactiveTimedRefresh(
-    (...args: Args) =>
-      convertCachedToTimedRefresh(
-        cacheDurationMs,
-        getRefresh(...args),
-      ),
-    args,
-  )
-}
-
-export { useReactiveCachedRefresh }
+export { useTimedCachedFn }

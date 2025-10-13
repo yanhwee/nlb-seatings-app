@@ -4,14 +4,18 @@ import {
   LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,
   LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
   LIBRARY_INFO_CACHE_DURATION_MS,
-  makeCachedRefresh,
-  makeLibraryAreasMapUrlCache,
-  makeLibraryAvailabilityCache,
-  makeLibraryInfoCache,
-  resolveCachedRefreshStrict,
+  makeLibraryAreasMapUrlTimedCachedFn,
+  makeLibraryAvailabilityTimedCachedFn,
+  makeLibraryInfoTimedCachedFn,
+  resolveTimedCachedFnStrict,
   Timestamp,
   timestampGetPromise,
 } from "./cache"
+import {
+  makeGetLibraryAreasMapUrlCoalesce,
+  makeGetLibraryAvailiabilityCoalesce,
+  makeGetLibraryInfoCoalesce,
+} from "./coalesce"
 import * as service from "@/lib/service"
 import {
   AreaId,
@@ -19,93 +23,83 @@ import {
   LibraryId,
   LibraryInfo,
 } from "./types"
-import {
-  makeLibraryAreasMapUrlCoalesce,
-  makeLibraryAvailiabilityCoalesce,
-  makeLibraryInfoCoalesce,
-} from "./coalesce"
 
 /* Library Info */
 
-const getLibraryInfoCache = makeLibraryInfoCache()
+const getLibraryInfoCoalesce =
+  makeGetLibraryInfoCoalesce<Timestamp<LibraryInfo>>()
 
-const getLibraryInfoRefresh = makeCachedRefresh(
-  getLibraryInfoCache,
+const libraryInfoTimedCachedFn = makeLibraryInfoTimedCachedFn(
   timestampGetPromise(service.getLibraryInfo),
 )
 
-const libraryInfoCoalesce =
-  makeLibraryInfoCoalesce<Timestamp<LibraryInfo>>()
-
-const getTimestampLibraryInfo = libraryInfoCoalesce(() =>
-  resolveCachedRefreshStrict(
-    getLibraryInfoRefresh(),
+const getTimedLibraryInfo = getLibraryInfoCoalesce(() =>
+  resolveTimedCachedFnStrict(
+    libraryInfoTimedCachedFn,
+    [],
     LIBRARY_INFO_CACHE_DURATION_MS,
   ),
 )
 
-const getLibraryInfo = async () =>
-  (await getTimestampLibraryInfo())[1]
+const getLibraryInfo = () =>
+  getTimedLibraryInfo().then((v) => v[1])
 
 /* Library Availability */
 
-const getLibraryAvailabilityCache =
-  makeLibraryAvailabilityCache()
-
-const getLibraryAvailabilityRefresh = makeCachedRefresh(
-  getLibraryAvailabilityCache,
-  timestampGetPromise(async (libraryId, date) =>
-    service.getLibraryAvailability(
-      await getLibraryInfo(),
-      libraryId,
-      date,
-    ),
-  ),
-)
-
-const libraryAvailabilityCoalesce =
-  makeLibraryAvailiabilityCoalesce<
+const getLibraryAvailabilityCoalesce =
+  makeGetLibraryAvailiabilityCoalesce<
     Timestamp<LibraryAvailability>
   >()
 
-const getTimestampLibraryAvailability =
-  libraryAvailabilityCoalesce(
+const libraryAvailabilityTimedCachedFn =
+  makeLibraryAvailabilityTimedCachedFn(
+    timestampGetPromise(async (libraryId, date) =>
+      service.getLibraryAvailability(
+        await getLibraryInfo(),
+        libraryId,
+        date,
+      ),
+    ),
+  )
+
+const getTimedLibraryAvailability =
+  getLibraryAvailabilityCoalesce(
     (libraryId: LibraryId, date: Date) =>
-      resolveCachedRefreshStrict(
-        getLibraryAvailabilityRefresh(libraryId, date),
+      resolveTimedCachedFnStrict(
+        libraryAvailabilityTimedCachedFn,
+        [libraryId, date],
         LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
       ),
   )
 
 /* Library Areas Map Url */
 
-const getLibraryAreasMapUrlCache = makeLibraryAreasMapUrlCache()
-
-const getLibraryAreasMapUrlRefresh = makeCachedRefresh(
-  getLibraryAreasMapUrlCache,
-  timestampGetPromise(async (libraryId) =>
-    service.getLibraryAreasMapUrl(
-      libraryId,
-      (await getLibraryInfo()).get(libraryId)!.areaInfo,
-    ),
-  ),
-)
-
-const libraryAreasMapUrlCoalesce =
-  makeLibraryAreasMapUrlCoalesce<
+const getLibraryAreasMapUrlCoalesce =
+  makeGetLibraryAreasMapUrlCoalesce<
     Timestamp<Map<AreaId, [string, string] | null>>
   >()
 
-const getTimestampLibraryAreasMapUrl =
-  libraryAreasMapUrlCoalesce((libraryId: LibraryId) =>
-    resolveCachedRefreshStrict(
-      getLibraryAreasMapUrlRefresh(libraryId),
+const libraryAreasMapUrlTimedCachedFn =
+  makeLibraryAreasMapUrlTimedCachedFn(
+    timestampGetPromise(async (libraryId) =>
+      service.getLibraryAreasMapUrl(
+        libraryId,
+        (await getLibraryInfo()).get(libraryId)!.areaInfo,
+      ),
+    ),
+  )
+
+const getTimedLibraryAreasMapUrl =
+  getLibraryAreasMapUrlCoalesce((libraryId: LibraryId) =>
+    resolveTimedCachedFnStrict(
+      libraryAreasMapUrlTimedCachedFn,
+      [libraryId],
       LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,
     ),
   )
 
 export {
   getLibraryInfo,
-  getTimestampLibraryAvailability,
-  getTimestampLibraryAreasMapUrl,
+  getTimedLibraryAvailability,
+  getTimedLibraryAreasMapUrl,
 }

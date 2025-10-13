@@ -1,20 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { formatLocalDate, setLocalHHmm } from "./date-utils"
+import {
+  makeGetLibraryAreasMapUrlStore,
+  makeGetLibraryAvailabilityStore,
+  makeGetLibraryInfoStore,
+  Store,
+} from "./store"
 import { LibraryId } from "./types"
-import { getOrCreate } from "./utils"
 
-interface Store<K, V> {
-  get: (k: K) => V | null
-  set: (k: K, v: V) => void
-  del: (k: K) => void
-}
-
-type Coalesce<Args extends any[], T> = (
+type Coalesce<Args extends unknown[], T> = (
   f: (...args: Args) => Promise<T>,
 ) => (...args: Args) => Promise<T>
 
-function makeCoalesce<Args extends any[], T>(
+function makeCoalesce<Args extends unknown[], T>(
   makeStore: () => Store<Args, Promise<T>>,
 ): Coalesce<Args, T> {
   const store = makeStore()
@@ -30,73 +26,30 @@ function makeCoalesce<Args extends any[], T>(
     }
 }
 
-function makeLibraryInfoStore<V>(): Store<[], V> {
-  let store: V | null = null
-  return {
-    get: ([]) => store,
-    set: ([], v) => {
-      store = v
-    },
-    del: ([]) => {
-      store = null
-    },
-  }
+function makeGetLibraryInfoCoalesce<V>(): Coalesce<[], V> {
+  return makeCoalesce(makeGetLibraryInfoStore<Promise<V>>)
 }
 
-function makeLibraryAvailaibilityStore<V>(): Store<
+function makeGetLibraryAvailiabilityCoalesce<V>(): Coalesce<
   [LibraryId, Date],
   V
 > {
-  const store = new Map<string, Map<LibraryId, V>>()
-  const formatDate = (date: Date) =>
-    formatLocalDate(setLocalHHmm(date, "0000"), "YYYY-MM-dd")
-  return {
-    get: ([libraryId, date]) =>
-      store.get(formatDate(date))?.get(libraryId) ?? null,
-    set: ([libraryId, date], v) => {
-      getOrCreate(store, formatDate(date), () => new Map()).set(
-        libraryId,
-        v,
-      )
-    },
-    del: ([libraryId, date]) => {
-      store.get(formatDate(date))?.delete(libraryId)
-    },
-  }
+  return makeCoalesce(
+    makeGetLibraryAvailabilityStore<Promise<V>>,
+  )
 }
 
-function makeLibraryAreasMapUrlStore<V>(): Store<
+function makeGetLibraryAreasMapUrlCoalesce<V>(): Coalesce<
   [LibraryId],
   V
 > {
-  const store = new Map<LibraryId, V>()
-  return {
-    get: ([libraryId]) => store.get(libraryId) ?? null,
-    set: ([libraryId], v) => store.set(libraryId, v),
-    del: ([libraryId]) => store.delete(libraryId),
-  }
-}
-
-function makeLibraryInfoCoalesce<V>(): Coalesce<[], V> {
-  return makeCoalesce(makeLibraryInfoStore<Promise<V>>)
-}
-
-function makeLibraryAvailiabilityCoalesce<V>(): Coalesce<
-  [LibraryId, Date],
-  V
-> {
-  return makeCoalesce(makeLibraryAvailaibilityStore<Promise<V>>)
-}
-
-function makeLibraryAreasMapUrlCoalesce<V>(): Coalesce<
-  [LibraryId],
-  V
-> {
-  return makeCoalesce(makeLibraryAreasMapUrlStore<Promise<V>>)
+  return makeCoalesce(
+    makeGetLibraryAreasMapUrlStore<Promise<V>>,
+  )
 }
 
 export {
-  makeLibraryInfoCoalesce,
-  makeLibraryAvailiabilityCoalesce,
-  makeLibraryAreasMapUrlCoalesce,
+  makeGetLibraryInfoCoalesce,
+  makeGetLibraryAvailiabilityCoalesce,
+  makeGetLibraryAreasMapUrlCoalesce,
 }

@@ -1,65 +1,81 @@
+"use client"
+
+import * as server from "@/lib/server"
+import { AreaId, LibraryAvailability, LibraryId } from "./types"
+import {
+  makeGetLibraryAreasMapUrlCoalesce,
+  makeGetLibraryAvailiabilityCoalesce,
+} from "./coalesce"
 import {
   LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,
   LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
-  makeCachedRefresh,
-  makeLibraryAreasMapUrlCache,
-  makeLibraryAvailabilityCache,
+  makeLibraryAreasMapUrlTimedCachedFn,
+  makeLibraryAvailabilityTimedCachedFn,
+  Time,
   Timestamp,
 } from "./cache"
-import * as server from "@/lib/server"
-import { useReactiveCachedRefresh } from "./cache-react"
-import { AreaId, LibraryAvailability, LibraryId } from "./types"
-import {
-  makeLibraryAreasMapUrlCoalesce,
-  makeLibraryAvailiabilityCoalesce,
-} from "./coalesce"
+import { useTimedCachedFn } from "./cache-react"
 
 /* Library Availability */
 
-const getLibraryAvailabilityCache =
-  makeLibraryAvailabilityCache()
-
-const libraryAvailabilityCoalesce =
-  makeLibraryAvailiabilityCoalesce<
+const getLibraryAvailabilityCoalesce =
+  makeGetLibraryAvailiabilityCoalesce<
     Timestamp<LibraryAvailability>
   >()
 
-const getLibraryAvailabilityRefresh = makeCachedRefresh(
-  getLibraryAvailabilityCache,
-  libraryAvailabilityCoalesce(
-    server.getTimestampLibraryAvailability,
-  ),
-)
+const serverGetTimedLibraryAvailability =
+  getLibraryAvailabilityCoalesce(
+    server.getTimedLibraryAvailability,
+  )
+
+const libraryAvailabilityTimedCachedFn =
+  makeLibraryAvailabilityTimedCachedFn(
+    serverGetTimedLibraryAvailability,
+  )
+
+const libraryAvailabilityTimedCachedFn_ = (() => {
+  const fn = libraryAvailabilityTimedCachedFn
+  const { cache, update } = fn
+  const wrap =
+    <V>(fn: (k: [LibraryId, Date]) => V) =>
+    ([libraryId, time]: [LibraryId, Time]) =>
+      fn([libraryId, new Date(time)])
+  return {
+    cache: wrap(cache),
+    update: wrap(update),
+  }
+})()
 
 const useLibraryAvailability = (
   libraryId: LibraryId,
   date: Date,
 ) =>
-  useReactiveCachedRefresh(
-    getLibraryAvailabilityRefresh,
-    [libraryId, date],
+  useTimedCachedFn(
+    libraryAvailabilityTimedCachedFn_,
+    [libraryId, date.getTime()],
     LIBRARY_AVAILABILITY_CACHE_DURATION_MS,
   )
 
 /* Library Areas Map Url */
 
-const getLibraryAreasMapUrlCache = makeLibraryAreasMapUrlCache()
-
-const libraryAreasMapUrlCoalesce =
-  makeLibraryAreasMapUrlCoalesce<
+const getLibraryAreasMapUrlCoalesce =
+  makeGetLibraryAreasMapUrlCoalesce<
     Timestamp<Map<AreaId, [string, string] | null>>
   >()
 
-const getLibraryAreasMapUrlRefresh = makeCachedRefresh(
-  getLibraryAreasMapUrlCache,
-  libraryAreasMapUrlCoalesce(
-    server.getTimestampLibraryAreasMapUrl,
-  ),
-)
+const serverGetTimedLibraryAreasMapUrl =
+  getLibraryAreasMapUrlCoalesce(
+    server.getTimedLibraryAreasMapUrl,
+  )
+
+const libraryAreasMapUrlTimedCachedFn =
+  makeLibraryAreasMapUrlTimedCachedFn(
+    serverGetTimedLibraryAreasMapUrl,
+  )
 
 const useLibraryAreasMapUrl = (libraryId: LibraryId) =>
-  useReactiveCachedRefresh(
-    getLibraryAreasMapUrlRefresh,
+  useTimedCachedFn(
+    libraryAreasMapUrlTimedCachedFn,
     [libraryId],
     LIBRARY_AREAS_MAP_URL_CACHE_DURATION_MS,
   )
