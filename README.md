@@ -35,7 +35,7 @@ The application will be accessible at `localhost:3000`.
 
 The application is built with efficient client-server synchronisation and caching to minimise request calls in mind.
 
-- Framework: React, Next.Js.
+- Framework: React, Next.js.
 - Language: TypeScript.
 - Styling: Vanilla HTML, CSS.
 - Database: None (Data accessed via server proxy).
