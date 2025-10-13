@@ -289,9 +289,7 @@ async function getLibraryAvailability(
   const daysDiff = diffLocalDays(date, now)
   if (!(0 <= daysDiff && daysDiff <= 1)) throw new Error()
 
-  const libraryDetails = libraryInfo.get(libraryId)
-  // TODO: remove all ! throw new Error()
-  if (!libraryDetails) throw new Error()
+  const libraryDetails = libraryInfo.get(libraryId)!
   const areaInfo = libraryDetails.areaInfo
 
   function getEndDatetime(): Date {
@@ -323,12 +321,12 @@ async function getLibraryAvailability(
 
   function initLibraryAvailability(): LibraryAvailability {
     return new Map(
-      Array.from(areaInfo.entries()).map(
-        ([areaId, areaDetails]) => [
+      areaInfo
+        .entries()
+        .map(([areaId, areaDetails]) => [
           areaId,
           initDatedAreaAvailability(areaDetails),
-        ],
-      ),
+        ]),
     )
   }
   function initDatedAreaAvailability(
@@ -357,11 +355,11 @@ async function getLibraryAvailability(
     }
   }
   function initAreaAvailability(
-    seatIds: Iterable<SeatId>,
+    seatIds: MapIterator<SeatId>,
     numberOfTimeslots: number,
   ): AreaAvailability {
     return new Map(
-      Array.from(seatIds).map((seatId) => [
+      seatIds.map((seatId) => [
         seatId,
         initSeatAvailability(numberOfTimeslots),
       ]),
@@ -377,11 +375,7 @@ async function getLibraryAvailability(
     availableAreas: Map<AreaId, SeatId[]>,
   ): void {
     for (const [areaId, seatIds] of availableAreas) {
-      const areaDetails = areaInfo.get(areaId)
-      const areaAvailability = libraryAvailability.get(areaId)
-      if (!areaDetails) throw new Error()
-      if (!areaAvailability) throw new Error()
-
+      const areaAvailability = libraryAvailability.get(areaId)!
       updateDatedAreaAvailability(
         areaAvailability,
         timeslot,
@@ -413,9 +407,7 @@ async function getLibraryAvailability(
     seatIds: SeatId[],
   ) {
     for (const seatId of seatIds) {
-      const seatAvailability = areaAvailability.get(seatId)
-      if (!seatAvailability) throw new Error()
-
+      const seatAvailability = areaAvailability.get(seatId)!
       updateSeatAvailability(seatAvailability, timeslotIndex)
     }
   }
@@ -440,10 +432,8 @@ async function getLibraryAvailability(
     )
 
   for (let i = 0; i < timeslots.length; i++) {
-    const timeslot = timeslots[i]
-    const availableAreas = await searches[i]
-    if (!timeslot) throw new Error()
-    if (!availableAreas) throw new Error()
+    const timeslot = timeslots[i]!
+    const availableAreas = await searches[i]!
     updateLibraryAvailabilty(
       libraryAvailability,
       timeslot,

@@ -3,7 +3,7 @@ import styles from "./SelectFormGroup.module.css"
 
 interface SelectFormGroupProps {
   icon: React.ComponentType<{ className?: string }>
-  options: Iterable<[number, string]>
+  options: [number, string][]
   selectedValue: number
   handleSelect: (id: number) => void
 }
@@ -21,7 +21,7 @@ function SelectFormGroup({
         value={selectedValue}
         onChange={(e) => handleSelect(parseInt(e.target.value))}
       >
-        {Array.from(options).map(([id, label]) => (
+        {options.map(([id, label]) => (
           <option key={id} value={id}>
             {label}
           </option>

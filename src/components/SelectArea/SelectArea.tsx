@@ -16,8 +16,13 @@ function SelectArea({
   return (
     <SelectFormGroup
       icon={FiBookOpen}
-      options={Array.from(areaInfo.entries()).map(
-        ([areaId, areaDetails]) => [areaId, areaDetails.name],
+      options={Array.from(
+        areaInfo
+          .entries()
+          .map(([areaId, areaDetails]) => [
+            areaId,
+            areaDetails.name,
+          ]),
       )}
       selectedValue={selectedAreaId}
       handleSelect={handleSelectAreaId}

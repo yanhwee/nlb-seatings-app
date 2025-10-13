@@ -16,11 +16,13 @@ function SelectLibrary({
   return (
     <SelectFormGroup
       icon={FiMapPin}
-      options={Array.from(libraryInfo.entries()).map(
-        ([libraryId, libraryDetails]) => [
-          libraryId,
-          libraryDetails.name,
-        ],
+      options={Array.from(
+        libraryInfo
+          .entries()
+          .map(([libraryId, libraryDetails]) => [
+            libraryId,
+            libraryDetails.name,
+          ]),
       )}
       selectedValue={selectedLibraryId}
       handleSelect={handleSelectLibraryId}
