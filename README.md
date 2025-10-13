@@ -4,7 +4,7 @@ Mobile web application that displays seat availabilities for SG's NLB libraries.
 
 Built with React & Next.js.
 
-Try it here: [nlb-seatings-app.vercel.app](nlb-seatings-app.vercel.app)!
+Try it here: [nlb-seatings-app.vercel.app](https://nlb-seatings-app.vercel.app/)!
 
 ## More Info
 
