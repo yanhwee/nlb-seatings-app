@@ -11,6 +11,8 @@
     "scratch": "tsx scratch.ts"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "luxon": "^3.7.2",
     "next": "^15.5.4",
     "react": "^19.2.0",
