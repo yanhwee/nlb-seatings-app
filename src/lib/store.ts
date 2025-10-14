@@ -70,17 +70,17 @@ function makeGetLibraryAvailabilityStore<V>(): Store<
   return {
     get: ([libraryId, date]) => {
       const index = getIndex(date)
-      if (!index) return null
+      if (index === null) return null
       return store[index].get(libraryId) ?? null
     },
     set: ([libraryId, date], v) => {
       const index = getIndex(date)
-      if (!index) return
+      if (index === null) return
       store[index].set(libraryId, v)
     },
     del: ([libraryId, date]) => {
       const index = getIndex(date)
-      if (!index) return
+      if (index === null) return
       store[index].delete(libraryId)
     },
   }
